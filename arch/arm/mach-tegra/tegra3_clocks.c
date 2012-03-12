@@ -3671,7 +3671,7 @@ static struct clk tegra_clk_cclk_g = {
 	.inputs	= mux_cclk_g,
 	.reg	= 0x368,
 	.ops	= &tegra_super_ops,
-	.max_rate = 1700000000,
+	.max_rate = 1800000000,
 };
 
 static struct clk tegra_clk_cclk_lp = {
@@ -3696,7 +3696,7 @@ static struct clk tegra_clk_virtual_cpu_g = {
 	.name      = "cpu_g",
 	.parent    = &tegra_clk_cclk_g,
 	.ops       = &tegra_cpu_ops,
-	.max_rate  = 1700000000,
+	.max_rate  = 1800000000,
 	.u.cpu = {
 		.main      = &tegra_pll_x,
 		.backup    = &tegra_pll_p,
@@ -3726,7 +3726,7 @@ static struct clk tegra_clk_cpu_cmplx = {
 	.name      = "cpu",
 	.inputs    = mux_cpu_cmplx,
 	.ops       = &tegra_cpu_cmplx_ops,
-	.max_rate  = 1700000000,
+	.max_rate  = 1800000000,
 };
 
 static struct clk tegra_clk_cop = {
@@ -4342,36 +4342,33 @@ static struct cpufreq_frequency_table freq_table_1p6GHz[] = {
 	{ 1,  204000 },
 	{ 2,  370000 },
 	{ 3,  475000 },
-	{ 4,  620000 },
+	{ 4,  640000 },
 	{ 5,  760000 },
 	{ 6,  880000 },
 	{ 7, 1000000 },
-	{ 8, 1100000 },
-	{ 9, 1200000 },
-	{10, 1300000 },
-	{11, 1400000 },
-	{12, 1500000 },
-	{13, 1600000 },
-	{14, 1700000 },
-	{15, CPUFREQ_TABLE_END },
+	{ 8, 1200000 },
+	{ 9, 1300000 },
+	{10, 1400000 },
+	{11, 1500000 },
+	{12, 1600000 },
+	{13, CPUFREQ_TABLE_END },
 };
 
-static struct cpufreq_frequency_table freq_table_1p7GHz[] = {
+static struct cpufreq_frequency_table freq_table_1p8GHz[] = {
 	{ 0,  102000 },
 	{ 1,  204000 },
 	{ 2,  370000 },
 	{ 3,  475000 },
 	{ 4,  620000 },
-	{ 5,  800000 },
+	{ 5,  880000 },
 	{ 6, 1000000 },
-	{ 7, 1150000 },
-	{ 8, 1300000 },
-	{ 9, 1400000 },
-	{10, 1500000 },
-	{11, 1600000 },
-	{12, 1700000 },
-	{13, 1800000 },
-	{14, CPUFREQ_TABLE_END },
+	{ 7, 1300000 },
+	{ 8, 1400000 },
+	{ 9, 1500000 },
+	{10, 1600000 },
+	{11, 1700000 },
+	{12, 1800000 },
+	{13, CPUFREQ_TABLE_END },
 };
 
 static struct tegra_cpufreq_table_data cpufreq_tables[] = {
@@ -4380,8 +4377,8 @@ static struct tegra_cpufreq_table_data cpufreq_tables[] = {
 	{ freq_table_1p3GHz, 1, 9, 2},
 	{ freq_table_1p4GHz, 1, 10, 2},
 	{ freq_table_1p5GHz, 1, 11, 2},
-	{ freq_table_1p6GHz, 1, 12, 2},
-	{ freq_table_1p7GHz, 1, 11, 2},
+	{ freq_table_1p6GHz, 2, 11, 2},
+	{ freq_table_1p8GHz, 2, 11, 2},
 };
 
 static int clip_cpu_rate_limits(
