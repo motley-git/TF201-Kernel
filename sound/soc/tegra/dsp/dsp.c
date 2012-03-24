@@ -55,6 +55,8 @@
 #define INPUT_SOURCE_VR 			101
 #define OUTPUT_SOURCE_NORMAL		200
 #define OUTPUT_SOURCE_VOICE            201
+#define INPUT_SOURCE_NO_AGC 300
+#define INPUT_SOURCE_AGC 301
 
 #define HEADPHONE_NO_MIC	0
 #define HEADSET_WITH_MIC	1
@@ -93,8 +95,9 @@ static int count_100 = 0;
 static int poll_rate = 0;
 bool bConfigured=false;
 int PID=0;
-int input_source=INPUT_SOURCE_NORMAL;
-int output_source=OUTPUT_SOURCE_NORMAL;
+static int input_source=INPUT_SOURCE_NORMAL;
+static int output_source=OUTPUT_SOURCE_NORMAL;
+static int input_agc = INPUT_SOURCE_NO_AGC;
 bool isRecording = false;
 
 EXPORT_SYMBOL(isRecording);
@@ -446,16 +449,7 @@ long fm34_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 #ifdef BYPASS_DSP_FOR_NORMAL_RECORDING
 						FM34_INFO("Start recording(DMIC), ");
 						isRecording = true;
-						if(output_source==OUTPUT_SOURCE_VOICE){
-							FM34_INFO("enable DSP since VOICE case (OUTPUT_SOURCE_VOICE)\n");
-							fm34_i2c_retry(dsp_chip->client, (u8 *)enable_parameter,
-										sizeof(enable_parameter));
-
-							FM34_INFO("Enable Noise Suppression (for TF201)\n");
-							fm34_i2c_retry(dsp_chip->client, (u8 *)TF201_enable_NS,
-										sizeof(TF201_enable_NS));
-						}
-						else if(input_source==INPUT_SOURCE_VR){
+						if(input_source==INPUT_SOURCE_VR){
 							FM34_INFO("enable DSP since VR case (INPUT_SOURCE_VR)\n");
 							fm34_i2c_retry(dsp_chip->client, (u8 *)enable_parameter,
 										sizeof(enable_parameter));
@@ -463,6 +457,15 @@ long fm34_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 							FM34_INFO("Disable Noise Suppression (for TF201)\n");
 							fm34_i2c_retry(dsp_chip->client, (u8 *)TF201_disable_NS,
 										sizeof(TF201_disable_NS));
+						}
+						else if(output_source==OUTPUT_SOURCE_VOICE || input_agc==INPUT_SOURCE_AGC){
+							FM34_INFO("enable DSP since VOICE case (OUTPUT_SOURCE_VOICE)\n");
+							fm34_i2c_retry(dsp_chip->client, (u8 *)enable_parameter,
+										sizeof(enable_parameter));
+
+							FM34_INFO("Enable Noise Suppression (for TF201)\n");
+							fm34_i2c_retry(dsp_chip->client, (u8 *)TF201_enable_NS,
+										sizeof(TF201_enable_NS));
 						}
 						else{
 							FM34_INFO("bypass DSP since NORMAL recording\n");
@@ -536,14 +539,16 @@ long fm34_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 					FM34_INFO("Input source = %s\n", arg==INPUT_SOURCE_NORMAL? "NORMAL" : "VR");
 					input_source=arg;
 					break;
-
 				case OUTPUT_SOURCE_NORMAL:
 				case OUTPUT_SOURCE_VOICE:
 					FM34_INFO("Output source = %s\n", arg==OUTPUT_SOURCE_NORMAL? "NORMAL" : "VOICE");
 					output_source=arg;
 					break;
-
-
+				case INPUT_SOURCE_AGC:
+				case INPUT_SOURCE_NO_AGC:
+					printk("Input AGC = %s\n",	 arg == INPUT_SOURCE_AGC ? "AGC" : "NON-AGC");
+					input_agc = arg;
+					break;
 				case PLAYBACK:
 					FM34_INFO("Do nothing because playback path always be bypassed after a DSP patch\n");
 				default:
@@ -627,10 +632,10 @@ static int fm34_probe(struct i2c_client *client,
 	bConfigured=false;
 	INIT_DELAYED_WORK(&poll_dsp_work, dsp_stress);
 	INIT_DELAYED_WORK(&config_dsp_work, fm34_reconfig);
+	schedule_delayed_work(&config_dsp_work, 0);
 	pr_info("%s()\n", __func__);
 
 	return 0;
-
 
 exit_free:
 	kfree(data);

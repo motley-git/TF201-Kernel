@@ -124,4 +124,3 @@ extern struct platform_device debug_uarte_device;
 #endif
 
 #endif
-

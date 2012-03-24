@@ -83,6 +83,7 @@ static struct board_info board_info;
 static struct regulator *reg_cardhu_cam;	/* LDO6 */
 static struct regulator *reg_cardhu_1v8_cam;	/* VDDIO_CAM 1.8V PBB4 */
 static struct regulator *reg_cardhu_2v85_cam;	/* Front Camera 2.85V power */
+static bool camera_busy = false;
 
 #ifdef CONFIG_I2C_MUX_PCA954x
 static struct pca954x_platform_mode cardhu_pca954x_modes[] = {
@@ -172,6 +173,11 @@ static int yuv_sensor_power_on(void)
 
     printk("yuv_sensor_power_on+\n");
 
+    if(camera_busy){
+        printk("yuv_sensor busy\n");
+        return -EBUSY;
+    }
+    camera_busy = true;
     tegra_gpio_enable(143);
     gpio_request(143, "gpio_pr7");
     gpio_direction_output(143, 1);
@@ -255,6 +261,7 @@ static int yuv_sensor_power_off(void)
 int yuv_sensor_power_off_reset_pin(void)
 {
     printk("yuv_sensor_power_off+\n");
+    camera_busy = false;
     gpio_direction_output(ISP_POWER_RESET_GPIO, 0);
     pr_info("gpio %d set to %d\n",ISP_POWER_RESET_GPIO, gpio_get_value(ISP_POWER_RESET_GPIO));
     gpio_free(ISP_POWER_RESET_GPIO);
@@ -274,6 +281,11 @@ static int yuv_front_sensor_power_on(void)
 	int ret;
 	printk("yuv_front_sensor_power_on+\n");
 
+	if(camera_busy){
+		printk("yuv_sensor busy\n");
+		return -EBUSY;
+	}
+	camera_busy = true;
 	/* 1.8V VDDIO_CAM controlled by "EN_1V8_CAM(GPIO_PBB4)" */
 	if (!reg_cardhu_1v8_cam) {
 		reg_cardhu_1v8_cam = regulator_get(NULL, "vdd_1v8_cam1"); /*cam2/3?*/
@@ -359,6 +371,7 @@ fail_to_get_reg:
 		reg_cardhu_1v8_cam = NULL;
 	}
 
+	camera_busy = false;
 	printk("yuv_front_sensor_power_on- : -ENODEV\n");
 	return -ENODEV;
 }
@@ -391,6 +404,7 @@ static int yuv_front_sensor_power_off(void)
 		reg_cardhu_1v8_cam = NULL;
 	}
 
+	camera_busy = false;
 	printk("yuv_front_sensor_power_off-\n");
 	return 0;
 }

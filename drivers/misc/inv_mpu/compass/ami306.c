@@ -629,7 +629,7 @@ static int ami306_suspend(void *mlsl_handle,
 			  struct ext_slave_descr *slave,
 			  struct ext_slave_platform_data *pdata)
 {
-	printk("%s+\n", __FUNCTION__);
+	printk("ami306: OFF +\n");
 	int result;
 	unsigned char reg;
 	result = inv_serial_read(mlsl_handle, pdata->address,
@@ -644,10 +644,10 @@ static int ami306_suspend(void *mlsl_handle,
 					 AMI306_REG_CNTL1, reg);
 	if (result) {
 		LOG_RESULT_LOCATION(result);
-		printk("%s-\n", __FUNCTION__);
 		return result;
 	}
 
+	printk("ami306: OFF -\n");
 	return result;
 }
 
@@ -655,7 +655,7 @@ static int ami306_resume(void *mlsl_handle,
 			 struct ext_slave_descr *slave,
 			 struct ext_slave_platform_data *pdata)
 {
-	printk("%s+\n", __FUNCTION__);
+	printk("ami306: ON +\n");
 	int result = INV_SUCCESS;
 	unsigned char regs[] = {
 		AMI306_REG_CNTL4_1,
@@ -698,7 +698,7 @@ static int ami306_resume(void *mlsl_handle,
 	result = inv_serial_single_write(mlsl_handle, pdata->address,
 					 AMI306_REG_CNTL3,
 					 AMI306_BIT_CNTL3_F0RCE);
-	printk("%s-\n", __FUNCTION__);
+	printk("ami306: ON -\n");
 	return result;
 }
 

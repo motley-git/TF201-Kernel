@@ -265,12 +265,18 @@ void tegra_thermal_alert(void *data)
 #ifndef CONFIG_TEGRA_THERMAL_SYSFS
 	if (temp_tj >= thermal->temp_throttle_tj) {
 		/* start throttling */
-		if (!tegra_is_throttling())
+		if (!tegra_is_throttling()){
+			mutex_unlock(&thermal_state.mutex);
 			tegra_therm_throttle(true);
+			mutex_lock(&thermal_state.mutex);
+		}
 	} else if (temp_tj <= thermal->temp_throttle_low_tj) {
 		/* switch off throttling */
-		if (tegra_is_throttling())
+		if (tegra_is_throttling()){
+			mutex_unlock(&thermal_state.mutex);
 			tegra_therm_throttle(false);
+			mutex_lock(&thermal_state.mutex);
+		}
 	}
 #endif
 

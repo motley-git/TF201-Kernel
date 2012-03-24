@@ -50,6 +50,8 @@
 #define INPUT_SOURCE_VR 101
 #define OUTPUT_SOURCE_NORMAL	 200
 #define OUTPUT_SOURCE_VOICE 201
+#define INPUT_SOURCE_NO_AGC 300
+#define INPUT_SOURCE_AGC 301
 
 
 #define RT5631_VERSION "0.01 alsa 1.0.24"
@@ -73,6 +75,7 @@ int count_base = 1;
 int count_100 = 0;
 static int input_source=INPUT_SOURCE_NORMAL;
 static int output_source=OUTPUT_SOURCE_NORMAL;
+static int input_agc = INPUT_SOURCE_NO_AGC;
 static int audio_codec_status = 0;
 
 struct snd_soc_codec *global_audio_codec = NULL;
@@ -367,7 +370,7 @@ static int rt5631_dmic_get(struct snd_kcontrol *kcontrol,
 
 static void rt5631_enable_dmic(struct snd_soc_codec *codec)
 {
-	if(output_source==OUTPUT_SOURCE_VOICE || input_source==INPUT_SOURCE_VR){
+	if(output_source==OUTPUT_SOURCE_VOICE || input_source==INPUT_SOURCE_VR || input_source == INPUT_SOURCE_AGC ){
 		printk("%s(): use dsp for capture gain = 0dB\n", __func__);
 		rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0000, 0x001f);	//boost 0dB
 	}
@@ -404,10 +407,10 @@ static int rt5631_dmic_put(struct snd_kcontrol *kcontrol,
 		return 0;
 
 	if (ucontrol->value.integer.value[0]) {
-		rt5631_enable_dmic(codec);
+		//rt5631_enable_dmic(codec);
 		rt5631->dmic_used_flag = 1;
 	} else {
-		rt5631_close_dmic(codec);
+		//rt5631_close_dmic(codec);
 		rt5631->dmic_used_flag = 0;
 	}
 
@@ -474,6 +477,41 @@ static int rt5631_eq_sel_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int rt5631_get_gain(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	return 0;
+}
+
+static int rt5631_set_gain(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+
+	int ret = 0;
+
+	mutex_lock(&codec->mutex);
+
+	if(ucontrol->value.enumerated.item[0]){
+		/* set heaset mic gain */
+		printk("%s(): headset gain = 0dB\n", __func__);
+		rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0000, 0x001f);	//boost 0dB
+	}else{
+		/* set dmic gain */
+		if(output_source==OUTPUT_SOURCE_VOICE || input_source==INPUT_SOURCE_VR || input_agc==INPUT_SOURCE_AGC){
+			printk("%s(): use dsp for capture gain = 0dB\n", __func__);
+			rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0000, 0x001f);	//boost 0dB
+		}else{
+			printk("%s(): use codec for capture gain = 28.5dB\n", __func__);
+			rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0013, 0x001f);    //boost 28.5dB
+		}
+	}
+	mutex_unlock(&codec->mutex);
+
+	return ret;
+}
+
+
 static const struct snd_kcontrol_new rt5631_snd_controls[] = {
 SOC_ENUM("MIC1 Mode Control",  rt5631_enum[3]),
 SOC_ENUM("MIC1 Boost", rt5631_enum[6]),
@@ -498,6 +536,10 @@ SOC_ENUM_EXT("EQ Mode", rt5631_enum[10], rt5631_eq_sel_get, rt5631_eq_sel_put),
 SOC_SINGLE("MIC1 Mute", RT5631_ADC_REC_MIXER, 14, 1, 0),
 SOC_SINGLE("DMIC Mute Left", RT5631_DIG_MIC_CTRL, 13, 1, 0),
 SOC_SINGLE("DMIC Mute Right", RT5631_DIG_MIC_CTRL, 12, 1, 0),
+
+/* Set recording gain */
+SOC_SINGLE_BOOL_EXT("Recording Gain", 0,
+	rt5631_get_gain, rt5631_set_gain),
 };
 
 static const struct snd_kcontrol_new rt5631_recmixl_mixer_controls[] = {
@@ -1531,15 +1573,6 @@ static void rt5631_set_dmic_params(struct snd_soc_codec *codec,
 {
 	int rate;
 
-	if(output_source==OUTPUT_SOURCE_VOICE || input_source==INPUT_SOURCE_VR){
-		printk("%s(): use dsp for capture gain = 0dB\n", __func__);
-		rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0000, 0x001f);	//boost 0dB
-	}
-	else{
-		printk("%s(): use codec for capture gain = 28.5dB\n", __func__);
-		rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0013, 0x001f);    //boost 28.5dB
-	}
-
 	rt5631_write_mask(codec, RT5631_GPIO_CTRL,
 		GPIO_PIN_FUN_SEL_GPIO_DIMC | GPIO_DMIC_FUN_SEL_DIMC,
 		GPIO_PIN_FUN_SEL_MASK | GPIO_DMIC_FUN_SEL_MASK);
@@ -1855,11 +1888,15 @@ long audio_codec_ioctl(struct file *filp,
 			switch(arg){
 				case INPUT_SOURCE_NORMAL:
 				case INPUT_SOURCE_VR:
-					printk("AUDIO_CODEC: Capture mode [%s]\n",
-						 arg == INPUT_SOURCE_NORMAL ? "NORMAL" : "VR");
+					printk("AUDIO_CODEC: Capture mode [%s]\n",	 arg == INPUT_SOURCE_NORMAL ? "NORMAL" : "VR");
 					input_source=arg;
 					break;
-			        case OUTPUT_SOURCE_NORMAL:
+				case INPUT_SOURCE_AGC:
+				case INPUT_SOURCE_NO_AGC:
+					printk("AUDIO_CODEC: Capture mode [%s]\n",	 arg == INPUT_SOURCE_AGC ? "AGC" : "NON-AGC");
+					input_agc = arg;
+					break;
+			       case OUTPUT_SOURCE_NORMAL:
 				case OUTPUT_SOURCE_VOICE:
                                         printk("AUDIO_CODEC: Capture mode [%s]\n",
                                                  arg == OUTPUT_SOURCE_NORMAL ? "NORMAL" : "VOICE");
@@ -1867,7 +1904,7 @@ long audio_codec_ioctl(struct file *filp,
 					break;
 				default:
 					break;
-}
+			}
 			break;
 
 	  default:  /* redundant, as cmd was checked against MAXNR */
@@ -2204,12 +2241,15 @@ static int rt5631_remove(struct snd_soc_codec *codec)
 
 static int rt5631_suspend(struct snd_soc_codec *codec, pm_message_t state)
 {
+	printk(KERN_INFO "%s+ #####\n", __func__);
 	rt5631_set_bias_level(codec, SND_SOC_BIAS_OFF);
+	printk(KERN_INFO "%s- #####\n", __func__);
 	return 0;
 }
 
 static int rt5631_resume(struct snd_soc_codec *codec)
 {
+	printk(KERN_INFO "%s+ #####\n", __func__);
 	struct rt5631_priv *rt5631 = snd_soc_codec_get_drvdata(codec);
 
 	rt5631_write_mask(codec, RT5631_PWR_MANAG_ADD3,
@@ -2226,6 +2266,7 @@ static int rt5631_resume(struct snd_soc_codec *codec)
 	else
 		rt5631_write_mask(codec, RT5631_INT_ST_IRQ_CTRL_2,
 					0, 0x2000);
+	printk(KERN_INFO "%s- #####\n", __func__);
 
 	return 0;
 }
@@ -2302,6 +2343,15 @@ static __devexit int rt5631_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+static int rt5631_i2c_shutdown(struct i2c_client *client)
+{
+
+	printk(KERN_INFO "%s+ #####\n", __func__);
+	rt5631_set_bias_level(rt5631_codec, SND_SOC_BIAS_OFF);
+	printk(KERN_INFO "%s- #####\n", __func__);
+	return 0;
+}
+
 struct i2c_driver rt5631_i2c_driver = {
 	.driver = {
 		.name = "rt5631",
@@ -2309,6 +2359,7 @@ struct i2c_driver rt5631_i2c_driver = {
 	},
 	.probe = rt5631_i2c_probe,
 	.remove   = __devexit_p(rt5631_i2c_remove),
+	.shutdown = rt5631_i2c_shutdown,
 	.id_table = rt5631_i2c_id,
 };
 

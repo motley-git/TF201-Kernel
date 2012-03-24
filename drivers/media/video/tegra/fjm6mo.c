@@ -64,6 +64,7 @@ extern unsigned int factory_mode;
 static bool update_mode = false;
 static bool capture_mode = false;
 static bool caf_mode = false;
+static bool initial_mode = false;
 static int ae_mode = 0;
 static int awb_mode = 0;
 static int touch_mode = TOUCH_STATUS_OFF;
@@ -1253,6 +1254,58 @@ static void sensor_start_af(struct sensor_info *info)
         fjm6mo_write_register(info->i2c_client, 1, 0x0A, 0x02, 0x1);
 }
 
+static int sensor_initial(struct sensor_info *info)
+{
+    int err, result;
+
+    fw_version();
+    if(((version_num&0xffffff) != 0xffffff)){
+        pr_info("sensor_initial start\n");
+        result = fjm6mo_write_register(info->i2c_client, 1, 0x0F, 0x12, 0x01);
+        err = isp_interrupt(INT_STATUS_MODE);
+        if(!err){
+            initial_mode = true;
+            //preview 1280x960
+            preview_x = 1280;
+            preview_y = 960;
+            fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x01, 0x24);
+            //Continues ouput the same frame
+            if(!(s_flag & 0x2))
+                fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x31, 0x01);
+            //Dynamic frame rate
+            fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x02, 0x01);
+            fjm6mo_write_register(info->i2c_client, 1, 0x03, 0x0A, 0x00);
+            //Set Flickering auto or 60HZ
+            if(factory_mode == 2){
+                fjm6mo_write_register(info->i2c_client, 1, 0x03, 0x06, 0x01);
+                err = fjm6mo_write_register(info->i2c_client, 1, 0x0A, 0x40, 0x06);
+            }
+            else
+                fjm6mo_write_register(info->i2c_client, 1, 0x03, 0x06, 0x04);
+            //Set Shadding on
+            fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x07, 0x01);
+            //Set shading table for calibration
+            if(shading_table != 0){
+                fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x2C, 0x01);
+                fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x07, 0x02);
+                fjm6mo_write_register(info->i2c_client, 1, 0x0D, 0x30, shading_table);
+                fjm6mo_write_register(info->i2c_client, 1, 0x0D, 0x31, shading_table);
+            }
+            //Set flash to auto
+            fjm6mo_write_register(info->i2c_client, 1, 0x0B, 0x1F, 0x02);
+            //Set whitebalance to auto
+            //fjm6mo_write_register(info->i2c_client, 1, 0x06, 0x02, 0x01);
+            switch_set_state(&fjm6mo_sdev, !(fjm6mo_sdev.state));
+            return 0;
+        }
+        else{
+            pr_err("sensor_initial error : isp cam start no interrupt\n");
+            _T("sensor_initial error : no interrupt");
+        }
+    }
+    return -EBUSY;
+}
+
 static long sensor_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
     struct sensor_info *info = file->private_data;
@@ -1267,6 +1320,11 @@ static long sensor_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
             struct sensor_mode mode;
             if (copy_from_user(&mode, (const void __user *)arg, sizeof(struct sensor_mode))) {
                 return -EFAULT;
+            }
+            if(!initial_mode){
+                err = sensor_initial(info);
+                if(err)
+                    return err;
             }
             err = sensor_set_mode(info, &mode);
             if(err)
@@ -2124,45 +2182,7 @@ static int sensor_open(struct inode *inode, struct file *file)
     if (info->pdata && info->pdata->power_on)
         info->pdata->power_on();
     yuv_sensor_power_on_reset_pin();
-    result = fjm6mo_write_register(info->i2c_client, 1, 0x0F, 0x12, 0x01);
-    err = isp_interrupt(INT_STATUS_MODE);
-    if(!err){
-        //preview 1280x960
-        preview_x = 1280;
-        preview_y = 960;
-        fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x01, 0x24);
-        //Continues ouput the same frame
-        if(!(s_flag & 0x2))
-            fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x31, 0x01);
-        //Dynamic frame rate
-        fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x02, 0x01);
-        fjm6mo_write_register(info->i2c_client, 1, 0x03, 0x0A, 0x00);
-        //Set Flickering auto or 60HZ
-        if(factory_mode == 2){
-            fjm6mo_write_register(info->i2c_client, 1, 0x03, 0x06, 0x01);
-            err = fjm6mo_write_register(info->i2c_client, 1, 0x0A, 0x40, 0x06);
-        }
-        else
-            fjm6mo_write_register(info->i2c_client, 1, 0x03, 0x06, 0x04);
-        //Set Shadding on
-        fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x07, 0x01);
-        //Set shading table for calibration
-        if(shading_table != 0){
-            fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x2C, 0x01);
-            fjm6mo_write_register(info->i2c_client, 1, 0x01, 0x07, 0x02);
-            fjm6mo_write_register(info->i2c_client, 1, 0x0D, 0x30, shading_table);
-            fjm6mo_write_register(info->i2c_client, 1, 0x0D, 0x31, shading_table);
-        }
-        //Set flash to auto
-        fjm6mo_write_register(info->i2c_client, 1, 0x0B, 0x1F, 0x02);
-        //Set whitebalance to auto
-        //fjm6mo_write_register(info->i2c_client, 1, 0x06, 0x02, 0x01);
-        switch_set_state(&fjm6mo_sdev, !(fjm6mo_sdev.state));
-    }
-    else{
-        pr_err("sensor_open error : isp cam start no interrupt\n");
-        _T("sensor_open error : no interrupt");
-    }
+
     return 0;
 }
 
@@ -2174,6 +2194,7 @@ int fjm6mo_sensor_release(struct inode *inode, struct file *file)
         if(update_mode)
             fw_update_fail();
         shading_table = 0;
+        initial_mode = false;
         capture_mode = false;
         caf_mode = false;
         touch_mode = TOUCH_STATUS_OFF;

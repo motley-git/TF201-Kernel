@@ -1679,9 +1679,10 @@ static int sensor_open(struct inode *inode, struct file *file)
 		ret = info->pdata->power_on();
 	if (ret == 0)
 		sensor_opened = true;
-	else
+	else{
 		sensor_opened = false;
-
+		return -EBUSY;
+	}
 	return 0;
 }
 
