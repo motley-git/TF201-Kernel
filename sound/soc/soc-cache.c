@@ -17,6 +17,7 @@
 #include <linux/lzo.h>
 #include <linux/bitmap.h>
 #include <linux/rbtree.h>
+#include <linux/delay.h>
 
 #include <trace/events/asoc.h>
 
@@ -392,6 +393,7 @@ static unsigned int snd_soc_8_16_read_i2c(struct snd_soc_codec *codec,
 	u8 reg = r;
 	u16 data;
 	int ret;
+	int retry = 0;
 	struct i2c_client *client = codec->control_data;
 
 	/* Write register */
@@ -408,8 +410,15 @@ static unsigned int snd_soc_8_16_read_i2c(struct snd_soc_codec *codec,
 
 	ret = i2c_transfer(client->adapter, xfer, 2);
 	if (ret != 2) {
-		dev_err(&client->dev, "i2c_transfer() returned %d\n", ret);
-		return 0;
+		dev_err(&client->dev, "%s i2c_transfer() returned %d\n", __func__, ret);
+		while((retry < 5) && ret != 2){
+			msleep(1);
+			retry++;
+			ret = i2c_transfer(client->adapter, xfer, 2);
+			dev_err(&client->dev, "i2c_transfer() retry = %d", retry);
+		}
+		if(ret != 2)
+			return 0;
 	}
 
 	return (data >> 8) | ((data & 0xff) << 8);

@@ -612,19 +612,9 @@ int wl_android_post_init(void)
 	char buf[IFNAMSIZ];
 	if (!dhd_download_fw_on_driverload) {
 		/* Call customer gpio to turn off power with WL_REG_ON signal */
-		//dhd_customer_gpio_wlan_ctrl(WLAN_RESET_OFF);
+		sdioh_stop(NULL);
+		dhd_customer_gpio_wlan_ctrl(WLAN_RESET_OFF);
 		g_wifi_on = 0;
-
-		memset(buf, 0, IFNAMSIZ);
-#ifdef CUSTOMER_HW2
-		snprintf(buf, IFNAMSIZ, "%s%d", iface_name, 0);
-#else
-		snprintf(buf, IFNAMSIZ, "%s%d", "eth", 0);
-#endif
-		if ((ndev = dev_get_by_name (&init_net, buf)) != NULL) {
-			wl_android_wifi_on(ndev);
-			wl_android_wifi_off(ndev);
-		}
 	} else {
 		memset(buf, 0, IFNAMSIZ);
 #ifdef CUSTOMER_HW2

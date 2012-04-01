@@ -111,8 +111,16 @@ static int tps6591x_rtc_valid_tm(struct rtc_time *tm)
 		|| tm->tm_mday > rtc_month_days(tm->tm_mon, tm->tm_year + OS_REF_YEAR)
 		|| tm->tm_hour >= 24
 		|| tm->tm_min >= 60
-		|| tm->tm_sec >= 60)
+		|| tm->tm_sec >= 60){
+		printk("tps6591x_rtc_valid_tm: rtc time not valid %u %u %u %u %u %u\n",tm->tm_year >= (RTC_YEAR_OFFSET + 99),
+				tm->tm_mon >= 12,
+				tm->tm_mday < 1,
+				tm->tm_mday > rtc_month_days(tm->tm_mon, tm->tm_year + OS_REF_YEAR),
+				tm->tm_hour >= 24,
+				tm->tm_min >= 60,
+				tm->tm_sec >= 60);
 		return -EINVAL;
+	}
 	return 0;
 }
 
@@ -164,6 +172,10 @@ static int tps6591x_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	tm->tm_mon = buff[4];
 	tm->tm_year = buff[5];
 	tm->tm_wday = buff[6];
+	if(tm->tm_mon >= 1)
+		tm->tm_mon -=1;
+	else
+		printk("[Error]tps6591x_rtc_read_time tm->tm_mon=%x! This value should be above 0. \n", tm->tm_mon );
 	print_time(dev, tm);
 	return tps6591x_rtc_valid_tm(tm);
 }
@@ -252,7 +264,7 @@ static int tps6591x_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	buff[4] = tm->tm_mon;
 	buff[5] = tm->tm_year;
 	buff[6] = tm->tm_wday;
-
+	buff[4] = tm->tm_mon+1;
 	print_time(dev, tm);
 	convert_decimal_to_bcd(buff, sizeof(buff));
 	err = tps6591x_rtc_stop(dev);
@@ -308,7 +320,7 @@ static int tps6591x_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	buff[1] = alrm->time.tm_min;
 	buff[2] = alrm->time.tm_hour;
 	buff[3] = alrm->time.tm_mday;
-	buff[4] = alrm->time.tm_mon;
+	buff[4] = alrm->time.tm_mon+1;
 	buff[5] = alrm->time.tm_year;
 	convert_decimal_to_bcd(buff, sizeof(buff));
 	err = tps6591x_write_regs(dev, RTC_ALARM, sizeof(buff), buff);
@@ -332,7 +344,7 @@ static int tps6591x_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	alrm->time.tm_min = buff[1];
 	alrm->time.tm_hour = buff[2];
 	alrm->time.tm_mday = buff[3];
-	alrm->time.tm_mon = buff[4];
+	alrm->time.tm_mon = buff[4]-1;
 	alrm->time.tm_year = buff[5];
 
 	dev_info(dev->parent, "\n getting alarm time::\n");

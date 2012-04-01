@@ -6057,7 +6057,6 @@ _dhdsdio_download_firmware(struct dhd_bus *bus)
 	bool embed = FALSE;	/* download embedded firmware */
 	bool dlok = FALSE;	/* download firmware succeeded */
 
-	printf("%s: fw_path = %s, nv_path=%s\n", __FUNCTION__, bus->fw_path, bus->nv_path);
 	/* Out immediately if no image to download */
 	if ((bus->fw_path == NULL) || (bus->fw_path[0] == '\0')) {
 #ifdef BCMEMBEDIMAGE
@@ -6091,6 +6090,8 @@ _dhdsdio_download_firmware(struct dhd_bus *bus)
 		if(chip_is_b1){
 			strcpy(bus->fw_path, "/system/vendor/firmware/bcm4330/fw_bcmdhd_b1.bin");
 		}
+
+		printf("%s: fw_path = %s, nv_path=%s\n", __FUNCTION__, bus->fw_path, bus->nv_path);
 
 		if (dhdsdio_download_code_file(bus, bus->fw_path)) {
 			DHD_ERROR(("%s: dongle image file download failed\n", __FUNCTION__));

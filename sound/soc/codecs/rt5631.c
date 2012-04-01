@@ -55,6 +55,7 @@
 
 
 #define RT5631_VERSION "0.01 alsa 1.0.24"
+#define RETRY_MAX (5)
 
 struct rt5631_priv {
 	int codec_version;
@@ -114,6 +115,8 @@ static inline void rt5631_write_reg_cache(struct snd_soc_codec *codec,
 static inline int rt5631_write(struct snd_soc_codec *codec,
 			unsigned int reg, unsigned int val)
 {
+	int ret = 0;
+	int retry = 0;
 
 	if (reg > 0x7e) {
 		if (reg == 0x90)
@@ -121,13 +124,22 @@ static inline int rt5631_write(struct snd_soc_codec *codec,
 		return 0;
 	}
 
-	if (snd_soc_write(codec, reg, val) == 0) {
-		rt5631_write_reg_cache(codec, reg, val);
-		return 0;
-	}else{
-		printk(KERN_ERR "%s failed\n", __func__);
-		return -EIO;
+	ret = snd_soc_write(codec, reg, val);
+	while((ret != 0) && (retry < RETRY_MAX)){
+		msleep(1);
+		ret = snd_soc_write(codec, reg, val);
+		retry++;
+		printk("%s: retry times = %d\n", __func__, retry);
 	}
+
+	if(ret == 0){
+		rt5631_write_reg_cache(codec, reg, val);
+                return 0;
+	}else{
+                printk(KERN_ERR "%s failed\n", __func__);
+                return -EIO;
+        }
+
 }
 
 static inline unsigned int rt5631_read(struct snd_soc_codec *codec,
@@ -370,15 +382,6 @@ static int rt5631_dmic_get(struct snd_kcontrol *kcontrol,
 
 static void rt5631_enable_dmic(struct snd_soc_codec *codec)
 {
-	if(output_source==OUTPUT_SOURCE_VOICE || input_source==INPUT_SOURCE_VR || input_source == INPUT_SOURCE_AGC ){
-		printk("%s(): use dsp for capture gain = 0dB\n", __func__);
-		rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0000, 0x001f);	//boost 0dB
-	}
-	else{
-		printk("%s(): use codec for capture gain = 28.5dB\n", __func__);
-		rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0013, 0x001f);    //boost 28.5dB
-	}
-
 	rt5631_write_mask(codec, RT5631_DIG_MIC_CTRL, DMIC_ENA, DMIC_ENA_MASK);
 	rt5631_write_mask(codec, RT5631_DIG_MIC_CTRL,
 		DMIC_L_CH_UNMUTE | DMIC_R_CH_UNMUTE,
@@ -407,10 +410,10 @@ static int rt5631_dmic_put(struct snd_kcontrol *kcontrol,
 		return 0;
 
 	if (ucontrol->value.integer.value[0]) {
-		//rt5631_enable_dmic(codec);
+		rt5631_enable_dmic(codec);
 		rt5631->dmic_used_flag = 1;
 	} else {
-		//rt5631_close_dmic(codec);
+		rt5631_close_dmic(codec);
 		rt5631->dmic_used_flag = 0;
 	}
 
@@ -499,11 +502,11 @@ static int rt5631_set_gain(struct snd_kcontrol *kcontrol,
 	}else{
 		/* set dmic gain */
 		if(output_source==OUTPUT_SOURCE_VOICE || input_source==INPUT_SOURCE_VR || input_agc==INPUT_SOURCE_AGC){
-			printk("%s(): use dsp for capture gain = 0dB\n", __func__);
+			printk("%s(): use dsp for capture gain\n", __func__);
 			rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0000, 0x001f);	//boost 0dB
 		}else{
-			printk("%s(): use codec for capture gain = 28.5dB\n", __func__);
-			rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x0013, 0x001f);    //boost 28.5dB
+			printk("%s(): use codec for capture gain\n", __func__);
+			rt5631_write_mask(codec, RT5631_ADC_CTRL_1, 0x000f, 0x001f);    //boost 22.5dB
 		}
 	}
 	mutex_unlock(&codec->mutex);
