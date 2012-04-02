@@ -764,7 +764,9 @@ CONFIG_IP6_NF_IPTABLES=y
 # CONFIG_RDS is not set
 # CONFIG_TIPC is not set
 # CONFIG_ATM is not set
-# CONFIG_L2TP is not set
+CONFIG_L2TP=y
+# CONFIG_L2TP_DEBUGFS is not set
+# CONFIG_L2TP_V3 is not set
 # CONFIG_BRIDGE is not set
 # CONFIG_NET_DSA is not set
 # CONFIG_VLAN_8021Q is not set
@@ -1267,6 +1269,7 @@ CONFIG_PPP_BSDCOMP=y
 CONFIG_PPP_MPPE=y
 # CONFIG_PPPOE is not set
 # CONFIG_PPTP is not set
+# CONFIG_PPPOL2TP is not set
 CONFIG_PPPOLAC=y
 CONFIG_PPPOPNS=y
 # CONFIG_SLIP is not set
