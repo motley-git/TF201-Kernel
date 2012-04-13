@@ -2601,9 +2601,18 @@ static long tegra3_clk_cbus_round_rate(struct clk *c, unsigned long rate)
 	if (!c->dvfs)
 		return rate;
 
-	/* update min now, since no dvfs table was available during init */
-	if (!c->min_rate)
-		c->min_rate = c->dvfs->freqs[0];
+	/* update min now, since no dvfs table was available during init
+	   (skip placeholder entries set to 1 kHz) */
+	if (!c->min_rate) {
+		for (i = 0; i < (c->dvfs->num_freqs - 1); i++) {
+			if (c->dvfs->freqs[i] > 1 * c->dvfs->freqs_mult) {
+				c->min_rate = c->dvfs->freqs[i];
+				break;
+			}
+		}
+		BUG_ON(!c->min_rate);
+	}
+	rate = max(rate, c->min_rate);
 
 	for (i = 0; i < (c->dvfs->num_freqs - 1); i++) {
 		unsigned long f = c->dvfs->freqs[i];
@@ -4310,7 +4319,7 @@ static struct cpufreq_frequency_table freq_table_1p3GHz[] = {
 	{ 3,  475000 },
 	{ 4,  640000 },
 	{ 5,  760000 },
-	{ 6,  880000 },
+	{ 6,  860000 },
 	{ 7, 1000000 },
 	{ 8, 1100000 },
 	{ 9, 1200000 },
@@ -4325,7 +4334,7 @@ static struct cpufreq_frequency_table freq_table_1p4GHz[] = {
 	{ 3,  475000 },
 	{ 4,  620000 },
 	{ 5,  760000 },
-	{ 6,  880000 },
+	{ 6,  860000 },
 	{ 7, 1000000 },
 	{ 8, 1100000 },
 	{ 9, 1200000 },
@@ -4341,7 +4350,7 @@ static struct cpufreq_frequency_table freq_table_1p5GHz[] = {
 	{ 3,  475000 },
 	{ 4,  640000 },
 	{ 5,  760000 },
-	{ 6,  880000 },
+	{ 6,  860000 },
 	{ 7, 1000000 },
 	{ 8, 1100000 },
 	{ 9, 1200000 },
@@ -4358,7 +4367,7 @@ static struct cpufreq_frequency_table freq_table_1p6GHz[] = {
 	{ 3,  475000 },
 	{ 4,  620000 },
 	{ 5,  760000 },
-	{ 6,  880000 },
+	{ 6,  860000 },
 	{ 7, 1000000 },
 	{ 8, 1200000 },
 	{ 9, 1300000 },
@@ -4374,7 +4383,7 @@ static struct cpufreq_frequency_table freq_table_1p8GHz[] = {
 	{ 2,  370000 },
 	{ 3,  475000 },
 	{ 4,  620000 },
-	{ 5,  800000 },
+	{ 5,  860000 },
 	{ 6, 1000000 },
 	{ 7, 1300000 },
 	{ 8, 1400000 },
