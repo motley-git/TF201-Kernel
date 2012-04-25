@@ -156,9 +156,9 @@ unsigned long tegra_cpu_highest_speed(void) {
 	return rate;
 }
 
-#ifndef CONFIG_ASUS_OVERCLOCK_MODES
 
-/* Asus Performance Modes (stock) */
+#ifndef CONFIG_ASUS_OVERCLOCK_MODES
+/* Start Generic mode only */
 
 #ifdef CONFIG_TEGRA_EDP_LIMITS
 
@@ -512,12 +512,12 @@ error:
 	return ret;
 }
 
-
+/* End Generic mode only */
 
 
 #else
 
-/* Asus Performance Modes */
+/* Start Asus performance modes */
 
 static  int system_mode=0;
 
@@ -999,16 +999,14 @@ error:
 
 	return ret;
 }
-
-
-
+/* End Asus performance mode only */
 
 #endif
 
-/* Shared with Generic and Asus Performance Modes
+
+/* Start - shared with Generic and Asus Performance Modes
  *
  */
-
 static unsigned int cpu_user_cap;
 
 static int cpu_user_cap_set(const char *arg, const struct kernel_param *kp)
@@ -1490,3 +1488,6 @@ MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
 MODULE_LICENSE("GPL");
 module_init(tegra_cpufreq_init);
 module_exit(tegra_cpufreq_exit);
+/* End - shared with Generic and Asus Performance Modes
+ *
+ */
