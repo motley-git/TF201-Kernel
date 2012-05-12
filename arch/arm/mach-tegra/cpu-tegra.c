@@ -1301,7 +1301,7 @@ void unlock_cpu_lp_mode(void)
 		check_cpu_state();
 		printk("unlock_cpu_lp_mode: restoring frequency-\n");
 	}
-	tegra_cpu_late_resume_set_speed_cap(1800000);
+	tegra_cpu_late_resume_set_speed_cap(1700000);
 }
 
 static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
@@ -1491,3 +1491,4 @@ module_exit(tegra_cpufreq_exit);
 /* End - shared with Generic and Asus Performance Modes
  *
  */
+ 
