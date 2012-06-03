@@ -31,7 +31,7 @@
  *      but shift and merge two read words before writing.
  *
  *   3. Copy the few remaining bytes.
- * 
+ *
  * This is fast on processors that have at least 10 registers for
  * allocation by GCC, and that can access memory at reg+const in one
  * instruction.
@@ -43,19 +43,19 @@
 
 /*
  * The macros defined in this file are:
- * 
+ *
  * BYTE_COPY_FWD(dst_beg_ptr, src_beg_ptr, nbytes_to_copy)
- * 
+ *
  * BYTE_COPY_BWD(dst_end_ptr, src_end_ptr, nbytes_to_copy)
- * 
+ *
  * WORD_COPY_FWD(dst_beg_ptr, src_beg_ptr, nbytes_remaining, nbytes_to_copy)
- * 
+ *
  * WORD_COPY_BWD(dst_end_ptr, src_end_ptr, nbytes_remaining, nbytes_to_copy)
- * 
+ *
  * MERGE(old_word, sh_1, new_word, sh_2)
- * 
+ *
  * MEM_COPY_FWD(dst_beg_ptr, src_beg_ptr, nbytes_to_copy)
- * 
+ *
  * MEM_COPY_BWD(dst_end_ptr, src_end_ptr, nbytes_to_copy)
  */
 
@@ -224,4 +224,3 @@ static __always_inline void mem_copy_bwd(unsigned long dstp,
 #endif
 
 #endif
-
