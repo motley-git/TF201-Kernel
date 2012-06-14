@@ -726,6 +726,9 @@ static int usb_uevent(struct device *dev, struct kobj_uevent_env *env)
 		return 0;
 	}
 
+	if(usb_dev->descriptor.idVendor == 0x1546 && usb_dev->descriptor.idProduct == 0x01a6)
+		msleep(500);
+
 	if (usb_dev->devnum < 0) {
 		/* driver is often null here; dev_dbg() would oops */
 		pr_debug("usb %s: already deleted?\n", dev_name(dev));

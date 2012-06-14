@@ -321,14 +321,18 @@ static int cardhu_panel_enable(void)
 
 static int cardhu_panel_disable(void)
 {
-	regulator_disable(cardhu_lvds_reg);
-	regulator_put(cardhu_lvds_reg);
-	cardhu_lvds_reg = NULL;
+	if (cardhu_lvds_reg){
+		regulator_disable(cardhu_lvds_reg);
+		regulator_put(cardhu_lvds_reg);
+		cardhu_lvds_reg = NULL;
+	}
 
 	msleep(10);
-	regulator_disable(cardhu_lvds_vdd_bl);
-	regulator_put(cardhu_lvds_vdd_bl);
-	cardhu_lvds_vdd_bl = NULL;
+	if (cardhu_lvds_vdd_bl){
+		regulator_disable(cardhu_lvds_vdd_bl);
+		regulator_put(cardhu_lvds_vdd_bl);
+		cardhu_lvds_vdd_bl = NULL;
+	}
 	msleep(250);
 
 	if (display_board_info.board_id == BOARD_DISPLAY_PM313) {
@@ -339,9 +343,11 @@ static int cardhu_panel_disable(void)
 	}
 	msleep(20);
 
-	regulator_disable(cardhu_lvds_vdd_panel);
-	regulator_put(cardhu_lvds_vdd_panel);
-	cardhu_lvds_vdd_panel= NULL;
+	if (cardhu_lvds_vdd_panel){
+		regulator_disable(cardhu_lvds_vdd_panel);
+		regulator_put(cardhu_lvds_vdd_panel);
+		cardhu_lvds_vdd_panel= NULL;
+	}
 
 	return 0;
 }

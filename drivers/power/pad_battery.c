@@ -37,6 +37,7 @@
 #include "../../arch/arm/mach-tegra/gpio-names.h"
 #include "../../arch/arm/mach-tegra/wakeups-t3.h"
 #include <mach/board-cardhu-misc.h>
+#include <linux/delay.h>
 #define SMBUS_RETRY                                     (3)
 #define BAT_IN_DET                                        TEGRA_GPIO_PN4
 #define GPIOPIN_BATTERY_DETECT	         BAT_IN_DET
@@ -235,7 +236,8 @@ static struct pad_device_info {
         struct delayed_work battery_stress_test;
 	struct delayed_work thermal_stress_test;
 	struct delayed_work pmu_stress_test;
-	struct delayed_work status_poll_work ;
+	struct delayed_work status_poll_work;
+	struct delayed_work low_low_bat_work;
 	struct timer_list charger_pad_dock_detect_timer ;
 	int smbus_status;
 	int battery_present;
@@ -333,13 +335,20 @@ static irqreturn_t battery_detect_isr(int irq, void *dev_id)
 		queue_delayed_work(battery_work_queue, &pad_device->status_poll_work, BATTERY_POLLING_RATE*HZ);
 	return IRQ_HANDLED;
 }
+static void low_low_battery_check(struct work_struct *work)
+{
+    cancel_delayed_work(&pad_device->status_poll_work);
+	queue_delayed_work(battery_work_queue,&pad_device->status_poll_work,0.1*HZ);
+	msleep(2000);
+	enable_irq(pad_device->irq_low_battery_detect );
+}
 static irqreturn_t low_battery_detect_isr(int irq, void *dev_id)
 {
+	disable_irq_nosync(pad_device->irq_low_battery_detect );
 	pad_device->low_battery_present=gpio_get_value(pad_device->gpio_low_battery_detect);
 	printk("low_battery_detect_isr battery is %x\n",pad_device->low_battery_present );
 	wake_lock_timeout(&pad_device->low_battery_wake_lock, 10*HZ);
-	cancel_delayed_work(&pad_device->status_poll_work);
-	queue_delayed_work(battery_work_queue,&pad_device->status_poll_work,1*HZ);
+	queue_delayed_work(battery_work_queue,&pad_device->low_low_bat_work,0.1*HZ);
 	return IRQ_HANDLED;
 }
 void setup_detect_irq(void )
@@ -448,7 +457,7 @@ void battery_callback(unsigned usb_cable_state)
 		power_supply_changed(&pad_supply[Charger_Type_AC]);
 	}
 	cancel_delayed_work(&pad_device->status_poll_work);
-	queue_delayed_work(battery_work_queue, &pad_device->status_poll_work,battery_cable_status?DELAY_FOR_CORRECT_CHARGER_STATUS *HZ:2*HZ);
+	queue_delayed_work(battery_work_queue, &pad_device->status_poll_work,2*HZ);
 }
 static irqreturn_t charger_pad_dock_interrupt(int irq, void *dev_id)
 {
@@ -766,6 +775,7 @@ static int pad_probe(struct i2c_client *client,
        spin_lock_init(&pad_device->lock);
 	INIT_DELAYED_WORK(&pad_device->status_poll_work, battery_status_poll) ;
        INIT_DELAYED_WORK(&pad_device->battery_stress_test,  battery_strees_test) ;
+	INIT_DELAYED_WORK(&pad_device->low_low_bat_work , low_low_battery_check) ;
         battery_work_queue = create_singlethread_workqueue("battery_workqueue");
 	setup_timer(&pad_device->charger_pad_dock_detect_timer, charger_pad_dock_detection, 0);
 	/* Register sysfs hooks */

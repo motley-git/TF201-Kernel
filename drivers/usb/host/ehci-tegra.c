@@ -58,6 +58,7 @@ static struct usb_hcd *usb3_ehci_handle;
 static struct delayed_work usb3_ehci_dock_in_work;
 static unsigned  int gpio_dock_in_irq = 0;
 static int usb3_init = 0;
+static struct platform_device *dock_port_device;
 #define HOSTPC1_DEVLC_STS 		(1 << 28)
 #define HOSTPC1_DEVLC_PTS(x)		(((x) & 0x7) << 29)
 
@@ -83,6 +84,12 @@ struct tegra_ehci_hcd {
 	unsigned int irq;
 };
 
+
+struct platform_device *dock_port_device_info(void)
+{
+	return dock_port_device;
+}
+EXPORT_SYMBOL(dock_port_device_info);
 
 static void usb3_ehci_dock_in_work_handler(struct work_struct *w)
 {
@@ -1168,6 +1175,10 @@ static int tegra_ehci_probe(struct platform_device *pdev)
 		tegra->irq = 0;
 	}*/
 
+	if (instance == 2) {
+		dock_port_device = pdev;
+	}
+
 	if (instance == 2){
 		usb3_ehci_handle = hcd;
 		gpio_dock_in_irq_init(hcd);
@@ -1287,13 +1298,13 @@ static int tegra_ehci_remove(struct platform_device *pdev)
 {
 	struct tegra_ehci_hcd *tegra = platform_get_drvdata(pdev);
 	struct usb_hcd *hcd = ehci_to_hcd(tegra->ehci);
-
+	int instance = tegra->phy->instance;
 	if (tegra == NULL || hcd == NULL)
 		return -EINVAL;
 
 	if (tegra->phy->instance == 2) {
 		free_irq(gpio_dock_in_irq, hcd);
-		gpio_free(TEGRA_GPIO_PU4);
+		//gpio_free(TEGRA_GPIO_PU4);
 	}
 
 	/* make sure controller is on as we will touch its registers */
@@ -1306,7 +1317,9 @@ static int tegra_ehci_remove(struct platform_device *pdev)
 		otg_put_transceiver(tegra->transceiver);
 	}
 #endif
-
+	if (tegra->phy->instance == 2) {
+		dock_port_device = NULL;
+	}
 	/* Turn Off Interrupts */
 	ehci_writel(tegra->ehci, 0, &tegra->ehci->regs->intr_enable);
 	clear_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
@@ -1322,7 +1335,8 @@ static int tegra_ehci_remove(struct platform_device *pdev)
 
 	del_timer_sync(&tegra->clk_timer);
 
-	clk_disable(tegra->clk);
+	if(instance != 2)
+		clk_disable(tegra->clk);
 	clk_put(tegra->clk);
 
 	if (tegra->clock_enabled) {

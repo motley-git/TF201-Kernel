@@ -217,6 +217,8 @@ int cardhu_pmon_init(void);
 int cardhu_pm298_gpio_switch_regulator_init(void);
 int cardhu_pm298_regulator_init(void);
 int cardhu_pm299_gpio_switch_regulator_init(void);
+struct platform_device *tegra_usb3_utmip_host_register(void);
+void tegra_usb3_utmip_host_unregister(struct platform_device *pdev);
 int cardhu_pm299_regulator_init(void);
 void __init cardhu_tsensor_init(void);
 #define TOUCH_GPIO_IRQ_ATMEL_T9	TEGRA_GPIO_PH4

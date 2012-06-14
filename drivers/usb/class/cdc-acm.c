@@ -91,6 +91,9 @@ static DEFINE_MUTEX(open_mutex);
 
 #define ACM_READY(acm)	(acm && acm->dev && acm->port.count)
 
+bool gps_dongle_flag = false;
+EXPORT_SYMBOL(gps_dongle_flag);
+
 static const struct tty_port_operations acm_port_ops = {
 };
 
@@ -1009,6 +1012,11 @@ static int acm_probe(struct usb_interface *intf,
 	quirks = (unsigned long)id->driver_info;
 	num_rx_buf = (quirks == SINGLE_RX_URB) ? 1 : ACM_NR;
 
+	if (usb_dev->descriptor.idVendor == 0x1546 && usb_dev->descriptor.idProduct == 0x01a6) {
+		dev_info(&usb_dev->dev, "ublox - GPS Receiver Dongle plug.\n");
+		gps_dongle_flag = true;
+	}
+
 	/* not a real CDC ACM device */
 	if (quirks & NOT_REAL_ACM)
 		return -ENODEV;
@@ -1442,6 +1450,11 @@ static void acm_disconnect(struct usb_interface *intf)
 	if (tty) {
 		tty_hangup(tty);
 		tty_kref_put(tty);
+	}
+
+	if(gps_dongle_flag == true) {
+		dev_info(&usb_dev->dev, "ublox - GPS Receiver Dongle unplug.\n");
+		gps_dongle_flag = false;
 	}
 }
 

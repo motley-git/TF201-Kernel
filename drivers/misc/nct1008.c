@@ -624,6 +624,7 @@ static int nct1008_enable_alert(struct nct1008_data *data)
 		return val;
 	}
 	val &= ~(ALERT_BIT | THERM2_BIT);
+	data->config =val;
 	ret = i2c_smbus_write_byte_data(data->client, CONFIG_WR, val);
 	if (ret) {
 		dev_err(&data->client->dev, "%s: fail to enable alert, i2c "
