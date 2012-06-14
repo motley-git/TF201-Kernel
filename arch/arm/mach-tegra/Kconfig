@@ -458,14 +458,5 @@ config TEGRA_WDT_RECOVERY
 config ASUS_EDP_POLICY
 	bool "ASUS EDP init regulator policy"
 	default y
-
-config ASUS_OVERCLOCK_MODES
-	bool "Use ASUS OC performance modes"
-	default y
-	help
-		When enabled, the kernel will use the 3 Asus performance modes.
-		When disabled, the kernel will behave like a stock kernel for
-		standard ROMs without the 3 distinct performance modes.
-
 endif
 
