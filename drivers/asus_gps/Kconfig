@@ -1,0 +1,5 @@
+config ASUS_GPS
+	tristate "The ASUS GPS driver"
+	help
+		A simple RIL driver that controls modem related GPIOs and
+		works as a bridge between kernel and user space RIL.
