@@ -253,7 +253,7 @@ static void sdhci_status_notify_cb(int card_present, void *dev_id)
 static irqreturn_t carddetect_irq(int irq, void *data)
 {
 	struct sdhci_host *sdhost = (struct sdhci_host *)data;
-	MMC_printk("%s: gpio_%d:%d", mmc_hostname(sdhost->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
+	//MMC_printk("%s: gpio_%d:%d", mmc_hostname(sdhost->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
 
 	tasklet_schedule(&sdhost->card_tasklet);
 	return IRQ_HANDLED;
@@ -596,7 +596,7 @@ static int tegra_sdhci_pltfm_init(struct sdhci_host *host,
 
 
 	if (!plat->mmc_data.built_in) {
-		MMC_printk("%s: non-built_in %d", mmc_hostname(host->mmc), plat->mmc_data.built_in);
+		//MMC_printk("%s: non-built_in %d", mmc_hostname(host->mmc), plat->mmc_data.built_in);
 		if (plat->mmc_data.ocr_mask & SDHOST_1V8_OCR_MASK) {
 			tegra_host->vddio_min_uv = SDHOST_LOW_VOLT_MIN;
 			tegra_host->vddio_max_uv = SDHOST_LOW_VOLT_MAX;
@@ -643,7 +643,7 @@ static int tegra_sdhci_pltfm_init(struct sdhci_host *host,
 	}
 	else
 	{
-		MMC_printk("%s: built_in %d", mmc_hostname(host->mmc), plat->mmc_data.built_in);
+		//MMC_printk("%s: built_in %d", mmc_hostname(host->mmc), plat->mmc_data.built_in);
 		tegra_host->vdd_io_reg = regulator_get(mmc_dev(host->mmc), "vddio_sdmmc");
 		if (WARN_ON(IS_ERR_OR_NULL(tegra_host->vdd_io_reg))) {
 			dev_err(mmc_dev(host->mmc), "%s regulator not found: %ld\n",
@@ -801,21 +801,21 @@ static int tegra_sdhci_suspend(struct sdhci_host *sdhci, pm_message_t state)
 	{
 
 		if (tegra_host->vdd_slot_reg)
-			MMC_printk("%s:vdd_slot_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_slot_reg->rdev->use_count);
+			//MMC_printk("%s:vdd_slot_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_slot_reg->rdev->use_count);
 
 		if (tegra_host->vdd_io_reg)
-			MMC_printk("%s:vdd_io_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_io_reg->rdev->use_count);
+			//MMC_printk("%s:vdd_io_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_io_reg->rdev->use_count);
 
 		if (tegra_host->vdd_slot_reg && tegra_host->vdd_slot_reg->rdev->use_count > 0)
 		{
 			ret = regulator_disable(tegra_host->vdd_slot_reg);
-			MMC_printk("%s: vdd_slot_reg ret %d", mmc_hostname(sdhci->mmc), ret);
+			//MMC_printk("%s: vdd_slot_reg ret %d", mmc_hostname(sdhci->mmc), ret);
 		}
 
 		if (tegra_host->vdd_io_reg && tegra_host->vdd_io_reg->rdev->use_count > 0)
 		{
 			ret = regulator_disable(tegra_host->vdd_io_reg);
-			MMC_printk("%s: vdd_io_reg ret %d", mmc_hostname(sdhci->mmc), ret);
+			//MMC_printk("%s: vdd_io_reg ret %d", mmc_hostname(sdhci->mmc), ret);
 		}
 
 	}
@@ -848,12 +848,12 @@ static int tegra_sdhci_resume(struct sdhci_host *sdhci)
 	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc2"))
 	{
 		if (tegra_host->vdd_io_reg)
-			MMC_printk("%s:vdd_io_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_io_reg->rdev->use_count);
+			//MMC_printk("%s:vdd_io_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_io_reg->rdev->use_count);
 
 		if (tegra_host->vdd_slot_reg)
-			MMC_printk("%s:vdd_slot_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_slot_reg->rdev->use_count);
+			//MMC_printk("%s:vdd_slot_reg: use_count %d", mmc_hostname(sdhci->mmc), tegra_host->vdd_slot_reg->rdev->use_count);
 
-		MMC_printk("%s: gpio_%d:%d", mmc_hostname(sdhci->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
+		//MMC_printk("%s: gpio_%d:%d", mmc_hostname(sdhci->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
 		if(gpio_get_value(SD_CARD_DETECT) == 0)
 		{
 			if (tegra_host->vdd_io_reg && tegra_host->vdd_io_reg->rdev->use_count == 0)

@@ -187,7 +187,7 @@ static int sdhci_pltfm_suspend(struct platform_device *dev, pm_message_t state)
 {
 	struct sdhci_host *host = platform_get_drvdata(dev);
 	int ret;
-	MMC_printk("%s: ++", mmc_hostname(host->mmc));
+	//MMC_printk("%s: ++", mmc_hostname(host->mmc));
 
 	ret = sdhci_suspend_host(host, state);
 	if (ret) {
@@ -202,7 +202,7 @@ static int sdhci_pltfm_suspend(struct platform_device *dev, pm_message_t state)
 		sdhci_resume_host(host);
 	}
 
-	MMC_printk("%s: --", mmc_hostname(host->mmc));
+	//MMC_printk("%s: --", mmc_hostname(host->mmc));
 	return ret;
 }
 
@@ -210,7 +210,7 @@ static int sdhci_pltfm_resume(struct platform_device *dev)
 {
 	struct sdhci_host *host = platform_get_drvdata(dev);
 	int ret = 0;
-	MMC_printk("%s: ++", mmc_hostname(host->mmc));
+	//MMC_printk("%s: ++", mmc_hostname(host->mmc));
 
 	if (host->ops && host->ops->resume)
 		ret = host->ops->resume(host);
@@ -223,7 +223,7 @@ static int sdhci_pltfm_resume(struct platform_device *dev)
 	if (ret)
 		dev_err(&dev->dev, "resume failed, error = %d\n", ret);
 
-	MMC_printk("%s: --", mmc_hostname(host->mmc));
+	//MMC_printk("%s: --", mmc_hostname(host->mmc));
 	return ret;
 }
 #else
@@ -251,10 +251,10 @@ static struct platform_driver sdhci_pltfm_driver = {
 
 static int __init sdhci_drv_init(void)
 {
-	printk(KERN_INFO "%s+ #####\n", __func__);
+	//printk(KERN_INFO "%s+ #####\n", __func__);
 	int ret = 0;
 	ret = platform_driver_register(&sdhci_pltfm_driver);
-	printk(KERN_INFO "%s- #####\n", __func__);
+	//printk(KERN_INFO "%s- #####\n", __func__);
 	return ret;
 }
 
