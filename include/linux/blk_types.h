@@ -152,6 +152,10 @@ enum rq_flag_bits {
 	__REQ_MIXED_MERGE,	/* merge of different types, fail separately */
 	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
 	__REQ_ON_PLUG,		/* on plug list */
+/* Software, Studio Engineering modified. */
+#if defined(CONFIG_ZIMMER)
+	__REQ_SWAPIN_DMPG,	/* request to swap-in page from swap area or demand paging */
+#endif
 	__REQ_NR_BITS,		/* stops here */
 };
 
@@ -193,5 +197,10 @@ enum rq_flag_bits {
 #define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
 #define REQ_SECURE		(1 << __REQ_SECURE)
 #define REQ_ON_PLUG		(1 << __REQ_ON_PLUG)
+
+/* Software, Studio Engineering modified. */
+#if defined(CONFIG_ZIMMER)
+#define REQ_SWAPIN_DMPG	(1 << __REQ_SWAPIN_DMPG)
+#endif
 
 #endif /* __LINUX_BLK_TYPES_H */

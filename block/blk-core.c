@@ -718,8 +718,14 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
 				ioc_set_batching(q, ioc);
 				blk_set_queue_full(q, is_sync);
 			} else {
-				if (may_queue != ELV_MQUEUE_MUST
-						&& !ioc_batching(q, ioc)) {
+/* Software, Studio Engineering added. start */
+#if defined(CONFIG_ZIMMER)
+				if (may_queue != ELV_MQUEUE_MUST && !ioc_batching(q, ioc) && (!(bio->bi_rw & REQ_SWAPIN_DMPG)))
+#else
+				if (may_queue != ELV_MQUEUE_MUST && !ioc_batching(q, ioc))
+#endif
+/* Software, Studio Engineering added. end */
+                {
 					/*
 					 * The queue is full and the allocating
 					 * process is not a "batcher", and not
@@ -737,7 +743,13 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
 	 * limit of requests, otherwise we could have thousands of requests
 	 * allocated with any setting of ->nr_requests
 	 */
-	if (rl->count[is_sync] >= (3 * q->nr_requests / 2))
+/* Software, Studio Engineering added. start */
+#if defined(CONFIG_ZIMMER)
+	if ((rl->count[is_sync] >= (3 * q->nr_requests / 2)) &&  (!(bio->bi_rw & REQ_SWAPIN_DMPG)))
+#else
+	if ((rl->count[is_sync] >= (3 * q->nr_requests / 2)))
+#endif
+/* Software, Studio Engineering added. end */
 		goto out;
 
 	rl->count[is_sync]++;
@@ -1222,6 +1234,12 @@ void init_request_from_bio(struct request *req, struct bio *bio)
 	req->cmd_flags |= bio->bi_rw & REQ_COMMON_MASK;
 	if (bio->bi_rw & REQ_RAHEAD)
 		req->cmd_flags |= REQ_FAILFAST_MASK;
+/* Software, Studio Engineering added. start */
+#if defined(CONFIG_ZIMMER)
+	if (bio->bi_rw & REQ_SWAPIN_DMPG)
+		req->cmd_flags |= (REQ_SWAPIN_DMPG | REQ_NOMERGE);
+#endif
+/* Software, Studio Engineering added. end */
 
 	req->errors = 0;
 	req->__sector = bio->bi_sector;
@@ -1243,7 +1261,13 @@ static int __make_request(struct request_queue *q, struct bio *bio)
 	 */
 	blk_queue_bounce(q, &bio);
 
+/* Software, Studio Engineering modified. start */
+#if defined(CONFIG_ZIMMER)
+	if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) || (bio->bi_rw & REQ_SWAPIN_DMPG)) {
+#else
 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA)) {
+#endif
+/* Software, Studio Engineering modified. end */
 		spin_lock_irq(q->queue_lock);
 		where = ELEVATOR_INSERT_FLUSH;
 		goto get_rq;

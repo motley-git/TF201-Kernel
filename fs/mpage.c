@@ -382,6 +382,12 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
 					&last_block_in_bio, &map_bh,
 					&first_logical_block,
 					get_block);
+/* Software, Studio Engineering added. */
+#if defined(CONFIG_ZIMMER)
+			if(bio) {
+				bio->bi_rw |= (1 << REQ_SWAPIN_DMPG);
+			}
+#endif
 		}
 		page_cache_release(page);
 	}
