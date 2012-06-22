@@ -539,7 +539,8 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
 	      unsigned int status)
 {
 	/* First check for errors */
-	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
+	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
+					MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
 		u32 remain, success;
 
 		/* Terminate the DMA transfer */
@@ -564,6 +565,8 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
 			data->error = -EILSEQ;
 		} else if (status & MCI_DATATIMEOUT) {
 			data->error = -ETIMEDOUT;
+		} else if (status & MCI_STARTBITERR) {
+			data->error = -ECOMM;
 		} else if (status & MCI_TXUNDERRUN) {
 			data->error = -EIO;
 		} else if (status & MCI_RXOVERRUN) {
@@ -817,8 +820,9 @@ static irqreturn_t mmci_irq(int irq, void *dev_id)
 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
 
 		data = host->data;
-		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|
-			      MCI_RXOVERRUN|MCI_DATAEND|MCI_DATABLOCKEND) && data)
+		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
+				MCI_TXUNDERRUN|MCI_RXOVERRUN|MCI_DATAEND|
+				 MCI_DATABLOCKEND) && data)
 			mmci_data_irq(host, data, status);
 
 		cmd = host->cmd;
