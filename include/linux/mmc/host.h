@@ -31,6 +31,7 @@ struct tegra_sdhci_host {
 	unsigned int vddio_max_uv;
 	/* max clk supported by the platform */
 	unsigned int max_clk_limit;
+	struct tegra_io_dpd *dpd;
 };
 
 struct mmc_ios {
