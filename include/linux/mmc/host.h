@@ -32,6 +32,8 @@ struct tegra_sdhci_host {
 	/* max clk supported by the platform */
 	unsigned int max_clk_limit;
 	struct tegra_io_dpd *dpd;
+	bool card_present;
+	bool is_rail_enabled;
 };
 
 struct mmc_ios {
@@ -155,6 +157,9 @@ struct mmc_host_ops {
 	void	(*init_card)(struct mmc_host *host, struct mmc_card *card);
 
 	int	(*start_signal_voltage_switch)(struct mmc_host *host, struct mmc_ios *ios);
+	int	(*execute_tuning)(struct mmc_host *host);
+	int	(*select_drive_strength)(unsigned int max_dtr,
+		int host_drv, int card_drv);
 };
 
 struct mmc_card;
