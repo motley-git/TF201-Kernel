@@ -127,7 +127,7 @@ static int nct1008_get_temp(struct device *dev, long *pTemp)
 
 	/* Return max between Local and External Temp */
 	*pTemp = max(temp_local_milli, temp_ext_milli);
-	printk("%s: ret temp=%dC \n", __func__, MILLICELSIUS_TO_CELSIUS(*pTemp));
+	pr_debug("%s: ret temp=%dC \n", __func__, MILLICELSIUS_TO_CELSIUS(*pTemp));
 	return 0;
 error:
 	dev_err(&client->dev, "\n error in file=: %s %s() line=%d: "
@@ -408,8 +408,8 @@ static void dump_reg(const char *reg_name, int offset)
 	ret = i2c_smbus_read_byte_data(pnct1008_data->client,
 		offset);
 	if (ret >= 0)
-		printk( "Reg %s  Reg 0x%02x "
-		"Value 0x%02x\n", reg_name,offset, ret);
+		pr_debug( "Reg %s  Reg 0x%02x "
+			"Value 0x%02x\n", reg_name,offset, ret);
 	else
 		printk( "%s: line=%d, i2c read error=%d\n",
 		__func__, __LINE__, ret);

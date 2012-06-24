@@ -24,7 +24,7 @@
 #endif
 
 #define ASUSPEC_NOTICE(format, arg...)	\
-	printk(KERN_NOTICE "asuspec: [%s] " format , __FUNCTION__ , ## arg)
+	pr_debug(KERN_NOTICE "asuspec: [%s] " format , __FUNCTION__ , ## arg)
 
 #define ASUSPEC_ERR(format, arg...)	\
 	printk(KERN_ERR "asuspec: [%s] " format , __FUNCTION__ , ## arg)

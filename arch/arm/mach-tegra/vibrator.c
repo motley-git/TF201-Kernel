@@ -27,7 +27,7 @@ static struct timer_list v_timer;
 static void vibrator_enable(struct timed_output_dev *dev, int value)
 {
         if (value) {
-		pr_info("[VIB]: vibrator_enable: %d\n",value);
+		//pr_info("[VIB]: vibrator_enable: %d\n",value);
 		del_timer_sync(&v_timer);//delete the last timer.
 		v_timer.expires = jiffies + msecs_to_jiffies(value);
 		add_timer(&v_timer);

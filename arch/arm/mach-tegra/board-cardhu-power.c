@@ -1304,7 +1304,7 @@ void tegra_watchdog_touch( unsigned int timeout )
 {
 #ifndef CONFIG_DEBUG_SLAB
 	u32 val;
-	printk("tegra_watchdog_touch\n");
+	//printk("tegra_watchdog_touch\n");
 	writel(WDT_UNLOCK_PATTERN, watchdog_source + WDT_UNLOCK);
 	writel(WDT_CMD_DISABLE_COUNTER, watchdog_source  + WDT_CMD);
 	val = (timeout  * 1000000ul) / 4;

@@ -255,14 +255,14 @@ int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
 
 	preempt_enable();
 
-	printk("__stop_cpus: wait_for_completion_timeout+\n");
+	//printk("__stop_cpus: wait_for_completion_timeout+\n");
 	if(0== wait_for_completion_timeout(&done.completion,STOP_MECHANISM_TIMEOUT+HZ )){
 		printk("[warnning timeout] __stop_cpus: wait_for_completion_timeout \n" );
 		//stop_cpu_timeout((unsigned long)cpumask);
 		BUG_ON(1);
 	}
 
-	printk("__stop_cpus: smp=%u done.executed=%u done.ret =%u-\n",smp_processor_id(),done.executed , done.ret );
+	//printk("__stop_cpus: smp=%u done.executed=%u done.ret =%u-\n",smp_processor_id(),done.executed , done.ret );
 	//del_timer_sync(&timer);
 	//destroy_timer_on_stack(&timer);
 	return done.executed ? done.ret : -ENOENT;
@@ -545,7 +545,7 @@ static int stop_machine_cpu_stop(void *data)
 	bool is_active;
 	unsigned long end_time;
 
-	printk("stop_machine_cpu_stop cpu=%u\n",cpu);
+	//printk("stop_machine_cpu_stop cpu=%u\n",cpu);
 	end_time=jiffies+STOP_MECHANISM_TIMEOUT ;
 
 	if (!smdata->active_cpus)

@@ -436,7 +436,7 @@ static void asusdec_fw_clear_buf(void){
 static void asusdec_fw_reset_ec_op(void){
 	char i2c_data[32];
 	int i;
-	int r_data[32];
+	//int r_data[32];
 
 	asusdec_fw_clear_buf();
 	
@@ -451,7 +451,7 @@ static void asusdec_fw_reset_ec_op(void){
 static void asusdec_fw_address_set_op(void){
 	char i2c_data[32];
 	int i;
-	int r_data[32];
+	//int r_data[32];
 
 	asusdec_fw_clear_buf();
 
@@ -470,7 +470,7 @@ static void asusdec_fw_address_set_op(void){
 static void asusdec_fw_enter_op(void){
 	char i2c_data[32];
 	int i;
-	int r_data[32];
+	//int r_data[32];
 
 	asusdec_fw_clear_buf();
 

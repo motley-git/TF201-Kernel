@@ -11,7 +11,7 @@
 #define TOUCHPAD_MODE			1	// 0: relative mode, 1: absolute mode
 #define TOUCHPAD_ELAN			1	// 0: not elan, 1:elantech
 #define DOCK_SPEAKER			0	// 0: not ready, 1: ready
-#define DOCK_USB			1	// 0: not ready, 1: ready
+#define DOCK_USB				1	// 0: not ready, 1: ready
 #define BATTERY_DRIVER			1	// 0: not ready, 1: ready
 /*
  * Debug Utility
@@ -30,7 +30,7 @@
 #endif
 
 #define ASUSDEC_NOTICE(format, arg...)	\
-	printk(KERN_NOTICE "asusdec: [%s] " format , __FUNCTION__ , ## arg)
+	pr_debug(KERN_NOTICE "asusdec: [%s] " format , __FUNCTION__ , ## arg)
 
 #define ASUSDEC_ERR(format, arg...)	\
 	printk(KERN_ERR "asusdec: [%s] " format , __FUNCTION__ , ## arg)

@@ -395,16 +395,16 @@ static ssize_t al3010_show_revise_lux(struct device *dev,
 		}else if(catch_first_poll_time == false){
 			do_gettimeofday(&t_first_poll_time);
 			catch_first_poll_time = true;
-			printk("light sensor debug : al3010 first poll timestamp , tv_sec = %d\n",t_first_poll_time.tv_sec);
-			printk("light sensor debug : al3010 first poll timestamp , tv_usec = %d\n",t_first_poll_time.tv_usec);
+			//printk("light sensor debug : al3010 first poll timestamp , tv_sec = %d\n",t_first_poll_time.tv_sec);
+			//printk("light sensor debug : al3010 first poll timestamp , tv_usec = %d\n",t_first_poll_time.tv_usec);
 			return sprintf(buf, "%d\n", -1);
 		}else{
 			struct timeval t_current_time;
 			int diff_time = 0;
 			do_gettimeofday(&t_current_time);
 
-			printk("light sensor debug : al3010 current timestamp , tv_sec = %d\n",t_current_time.tv_sec);
-			printk("light sensor debug : al3010 current timestamp , tv_usec = %d\n",t_current_time.tv_usec);
+			//printk("light sensor debug : al3010 current timestamp , tv_sec = %d\n",t_current_time.tv_sec);
+			//printk("light sensor debug : al3010 current timestamp , tv_usec = %d\n",t_current_time.tv_usec);
 
 			diff_time = ( (t_current_time.tv_sec-t_first_poll_time.tv_sec)*1000000 + (t_current_time.tv_usec-t_first_poll_time.tv_usec) )/1000;
 			if(diff_time > time_for_sensor_ready){
@@ -440,7 +440,7 @@ static ssize_t al3010_show_revise_lux(struct device *dev,
 			}
 		}else{
 			if( revise_lux > 30 ){
-				printk("light sensor debug : al3010 stop filter noise lux > 30 , lux = %d\n",revise_lux);
+				//printk("light sensor debug : al3010 stop filter noise lux > 30 , lux = %d\n",revise_lux);
 			}
 			// reset first time check
 			catch_first_poll_noise_time = false;
