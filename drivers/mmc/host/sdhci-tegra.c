@@ -40,7 +40,7 @@
 #define SDHCI_VENDOR_CLOCK_CNTRL	0x100
 #define SDHCI_VENDOR_CLOCK_CNTRL_SDMMC_CLK	0x1
 #define SDHCI_VENDOR_CLOCK_CNTRL_PADPIPE_CLKEN_OVERRIDE	0x8
-#define SDHCI_VENDOR_CLOCK_CNTRL_SPI_MODE_CLKEN_OVERRIDE       0x4
+#define SDHCI_VENDOR_CLOCK_CNTRL_SPI_MODE_CLKEN_OVERRIDE	0x4
 #define SDHCI_VENDOR_CLOCK_CNTRL_BASE_CLK_FREQ_SHIFT	8
 #define SDHCI_VENDOR_CLOCK_CNTRL_TAP_VALUE_SHIFT	16
 #define SDHCI_VENDOR_CLOCK_CNTRL_SDR50_TUNING		0x20
@@ -90,7 +90,9 @@ struct tegra_sdhci_hw_ops{
 #ifdef CONFIG_ARCH_TEGRA_2x_SOC
 static struct tegra_sdhci_hw_ops tegra_2x_sdhci_ops = {
 };
-#else
+#endif
+
+#ifdef CONFIG_ARCH_TEGRA_3x_SOC
 static struct tegra_sdhci_hw_ops tegra_3x_sdhci_ops = {
 	.set_card_clock = tegra_3x_sdhci_set_card_clock,
 	.sdhost_init = tegra3_sdhci_post_reset_init,
@@ -147,12 +149,11 @@ static void tegra_sdhci_writel(struct sdhci_host *host, u32 val, int reg)
 
 static unsigned int tegra_sdhci_get_cd(struct sdhci_host *sdhci)
 {
-       struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
-       struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
+	struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
 
-       return tegra_host->card_present;
+	return tegra_host->card_present;
 }
-
 
 static unsigned int tegra_sdhci_get_ro(struct sdhci_host *sdhci)
 {
@@ -285,10 +286,12 @@ static void sdhci_status_notify_cb(int card_present, void *dev_id)
 static irqreturn_t carddetect_irq(int irq, void *data)
 {
 	struct sdhci_host *sdhost = (struct sdhci_host *)data;
-	//MMC_printk("%s: gpio_%d:%d", mmc_hostname(sdhost->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
+
+	printk("%s: gpio_%d:%d", mmc_hostname(sdhost->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
+	
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhost);
 	struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
-	struct platform_device *pdev = to_platform_device(mmc_dev(sdhost->mmc));
+	struct platform_device  *pdev = to_platform_device(mmc_dev(sdhost->mmc));
 	struct tegra_sdhci_platform_data *plat;
 
 	plat = pdev->dev.platform_data;
@@ -456,10 +459,11 @@ set_clk:
 	sdhci_writew(sdhci, clk, SDHCI_CLOCK_CONTROL);
 out:
 	sdhci->clock = clock;
-
 	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc1")) {
-		printk( "%s clock request: %uKHz. currently "
+#ifdef CONFIG_MMC_DEBUG
+	printk( "%s clock request: %uKHz. currently "
 			"%uKHz\n", mmc_hostname(sdhci->mmc), clock/1000, sdhci->max_clk/1000);
+#endif
 	}
 }
 
@@ -806,6 +810,8 @@ out:
 	return err;
 }
 
+
+
 static int tegra_sdhci_pltfm_init(struct sdhci_host *host,
 				  struct sdhci_pltfm_data *pdata)
 {
@@ -900,12 +906,11 @@ static int tegra_sdhci_pltfm_init(struct sdhci_host *host,
 	}
 
 	/*
-	* If there is no card detect gpio, assume that the
-	* card is always present.
-	*/
-	
+	 * If there is no card detect gpio, assume that the
+	 * card is always present.
+	 */
 	if (!gpio_is_valid(plat->cd_gpio))
-               tegra_host->card_present = 1;
+		tegra_host->card_present = 1;
 
 	if (!plat->mmc_data.built_in) {
 		//MMC_printk("%s: non-built_in %d", mmc_hostname(host->mmc), plat->mmc_data.built_in);
@@ -993,18 +998,17 @@ static int tegra_sdhci_pltfm_init(struct sdhci_host *host,
 	tegra_host->max_clk_limit = plat->max_clk_limit;
 	tegra_host->instance = pdev->id;
 	tegra_host->dpd = tegra_io_dpd_get(mmc_dev(host->mmc));
+
 	host->mmc->pm_caps |= plat->pm_caps;
-	host->mmc->pm_caps = plat->pm_flags;
+	host->mmc->pm_flags |= plat->pm_flags;
+
 	host->mmc->caps |= MMC_CAP_ERASE;
 	host->mmc->caps |= MMC_CAP_DISABLE;
 	/* enable 1/8V DDR capable */
 	host->mmc->caps |= MMC_CAP_1_8V_DDR;
-
-
 	if (plat->is_8bit)
 		host->mmc->caps |= MMC_CAP_8_BIT_DATA;
 	host->mmc->caps |= MMC_CAP_SDIO_IRQ;
-	host->mmc->caps |= MMC_CAP_BKOPS;
 
 	host->mmc->pm_caps |= MMC_PM_KEEP_POWER | MMC_PM_IGNORE_PM_NOTIFY;
 	if (plat->mmc_data.built_in) {
@@ -1014,7 +1018,7 @@ static int tegra_sdhci_pltfm_init(struct sdhci_host *host,
 
 	/* set mmc1 built_in = 0 in bcm4329 chip */
 	if(!strcmp(mmc_hostname(host->mmc), "mmc1"))
-		host->mmc->pm_flags = MMC_PM_IGNORE_PM_NOTIFY;
+		host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
 
 	/* Do not turn OFF embedded sdio cards as it support Wake on Wireless */
 	if (plat->mmc_data.embedded_sdio)
@@ -1237,17 +1241,21 @@ struct sdhci_pltfm_data sdhci_tegra_pdata = {
 	.quirks = SDHCI_QUIRK_BROKEN_TIMEOUT_VAL |
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 		  SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
+		  SDHCI_QUIRK_NON_STD_VOLTAGE_SWITCHING |
 #endif
 #ifdef CONFIG_ARCH_TEGRA_3x_SOC
 		  SDHCI_QUIRK_NONSTANDARD_CLOCK |
-		  SDHCI_QUIRK_NON_STD_VOLTAGE_SWITCHING |
 		  SDHCI_QUIRK_NON_STANDARD_TUNING |
 #endif
 		  SDHCI_QUIRK_SINGLE_POWER_WRITE |
 		  SDHCI_QUIRK_NO_HISPD_BIT |
 		  SDHCI_QUIRK_BROKEN_ADMA_ZEROLEN_DESC |
+		  SDHCI_QUIRK_NO_CALC_MAX_DISCARD_TO |
 		  SDHCI_QUIRK_BROKEN_CARD_DETECTION,
 	.ops  = &tegra_sdhci_ops,
 	.init = tegra_sdhci_pltfm_init,
 	.exit = tegra_sdhci_pltfm_exit,
 };
+
+
+
