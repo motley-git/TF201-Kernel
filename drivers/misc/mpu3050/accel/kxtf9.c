@@ -379,7 +379,7 @@ static int kxtf9_suspend(void *mlsl_handle,
 	unsigned char data;
 	struct kxtf9_private_data *private_data = pdata->private_data;
 
-	printk("%s+\n", __func__);
+	pr_debug("%s+\n", __func__);
 	/* Wake up */
 	result = inv_serial_single_write(mlsl_handle, pdata->address,
 				KXTF9_CTRL_REG1, 0x40);
@@ -412,7 +412,7 @@ static int kxtf9_suspend(void *mlsl_handle,
 	result = inv_serial_read(mlsl_handle, pdata->address,
 				KXTF9_INT_REL, 1, &data);
 	ERROR_CHECK(result);
-	printk("%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 
 	return result;
 }
@@ -429,7 +429,7 @@ static int kxtf9_resume(void *mlsl_handle,
 	unsigned char data;
 	struct kxtf9_private_data *private_data = pdata->private_data;
 
-	printk("%s+\n", __func__);
+	pr_debug("%s+\n", __func__);
 	/* Wake up */
 	result = inv_serial_single_write(mlsl_handle, pdata->address,
 				KXTF9_CTRL_REG1, 0x40);
@@ -461,7 +461,7 @@ static int kxtf9_resume(void *mlsl_handle,
 	result = inv_serial_read(mlsl_handle, pdata->address,
 				KXTF9_INT_REL, 1, &data);
 	ERROR_CHECK(result);
-	printk("%s-\n", __func__);
+	pr_debug("%s-\n", __func__);
 	return INV_SUCCESS;
 }
 

@@ -1006,7 +1006,7 @@ int mpu_dev_suspend(struct device *dev, pm_message_t mesg)
 			"%s: Already suspended %d\n", __func__, mesg.event);
 	}
 	mutex_unlock(&mpu->mutex);
-	printk("%s-\n", __FUNCTION__);
+	pr_debug("%s-\n", __FUNCTION__);
 	return 0;
 }
 
@@ -1042,7 +1042,7 @@ int mpu_dev_resume(struct device *dev)
 			"%s for pid %d\n", __func__, mpu->pid);
 	}
 	mutex_unlock(&mpu->mutex);
-	printk("%s-\n", __FUNCTION__);
+	pr_debug("%s-\n", __FUNCTION__);
 	return 0;
 }
 

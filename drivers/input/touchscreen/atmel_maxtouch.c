@@ -1027,7 +1027,7 @@ static ssize_t store_mode2(struct device *dev, struct device_attribute *devattr,
 		
 	mxt_write_byte(data->client, MXT_BASE_ADDR(cfg[0], data)+cfg[1],cfg[2]);
 
-	printk("Touch: cfg[0]=%d, cfg[1]=%d, cfg[2]=%d\n",cfg[0],cfg[1],cfg[2]);
+	pr_debug("Touch: cfg[0]=%d, cfg[1]=%d, cfg[2]=%d\n",cfg[0],cfg[1],cfg[2]);
 	
 	mxt_write_byte(data->client, MXT_BASE_ADDR(MXT_GEN_COMMANDPROCESSOR_T6, data) + MXT_ADR_T6_BACKUPNV,MXT_CMD_T6_BACKUP);
 	return count;
@@ -1971,7 +1971,7 @@ int process_message(u8 *message, u8 object, struct mxt_data *mxt)
 		}
 		if (status & MXT_MSGB_T6_CAL) {
 			/* Calibration in action, no need to react */
-			dev_info(&client->dev,
+			mxt_debug(&client->dev,
 				 "maXTouch calibration in progress\n");
 		}
 		if (status & MXT_MSGB_T6_SIGERR) {
@@ -1993,11 +1993,11 @@ int process_message(u8 *message, u8 object, struct mxt_data *mxt)
 		}
 		if (status & MXT_MSGB_T6_RESET) {
 			/* Chip has reseted, no need to react. */
-			dev_info(&client->dev, "maXTouch chip reset\n");
+			mxt_debug(&client->dev, "maXTouch chip reset\n");
 		}
 		if (status == 0) {
 			/* Chip status back to normal. */
-			dev_info(&client->dev, "maXTouch status normal\n");
+			mxt_debug(&client->dev, "maXTouch status normal\n");
 		}
 
              if (cfg_flag){
@@ -2807,7 +2807,7 @@ extern void touch_callback_elan(unsigned cable_status);
 #endif
 
 void touch_callback(unsigned cable_status){	 		
-    printk("Touch charger state: %d\n",  cable_status);
+	pr_debug("Touch charger state: %d\n",  cable_status);
     pre_usb_cable_status = now_usb_cable_status;
     now_usb_cable_status = cable_status;
     update_noise_state(); // update the noise state
@@ -2824,7 +2824,7 @@ static void mxt_early_suspend(struct early_suspend *es)
 
 	if (mxt_suspend(mxt->client, PMSG_SUSPEND) != 0)
 		dev_err(&mxt->client->dev, "%s: failed\n", __func__);
-	printk(KERN_WARNING "MXT Early Suspended\n");
+	pr_debug(KERN_WARNING "MXT Early Suspended\n");
 }
 
 static void mxt_early_resume(struct early_suspend *es)
@@ -2834,7 +2834,7 @@ static void mxt_early_resume(struct early_suspend *es)
 
 	if (mxt_resume(mxt->client) != 0)
 		dev_err(&mxt->client->dev, "%s: failed\n", __func__);
-	printk(KERN_WARNING "MXT Early Resumed\n");
+	pr_debug(KERN_WARNING "MXT Early Resumed\n");
 }
 #endif
 
@@ -2896,17 +2896,17 @@ int mxt_stress_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 		case MXT_POLL_DATA:
 			if (arg == MXT_IOCTL_START_HEAVY){
-				printk("touch sensor heavey\n");
+				pr_debug("touch sensor heavey\n");
 			poll_mode = START_HEAVY;
 			queue_delayed_work(sensor_work_queue, &mxt_poll_data_work, poll_mode);
 			}
 			else if (arg == MXT_IOCTL_START_NORMAL){
-				printk("touch sensor normal\n");
+				pr_debug("touch sensor normal\n");
 				poll_mode = START_NORMAL;
 				queue_delayed_work(sensor_work_queue, &mxt_poll_data_work, poll_mode);
 			}
 			else if  (arg == MXT_IOCTL_END){
-			printk("touch sensor end\n");
+				pr_debug("touch sensor end\n");
 			cancel_delayed_work_sync(&mxt_poll_data_work);
 			}
 			else
