@@ -1736,7 +1736,7 @@ finish_init_boot:
 
 void force_release_pos(struct mxt_data *mxt)
 {
-	printk("Touch: force release position\n");
+	pr_debug("Touch: force release position\n");
 	int i;
 	for (i=0; i < 10; i++){
 		if (fingerInfo[i].pressure ==0) continue;
@@ -2147,7 +2147,8 @@ int process_message(u8 *message, u8 object, struct mxt_data *mxt)
 
 		break;
 	case MXT_PROCG_NOISESUPPRESSION_T48: // the nosie message 
-		dev_info(&client->dev, "Noise Message with bytes: 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\n",
+		if (debug >= DEBUG_TRACE)
+			dev_info(&client->dev, "Noise Message with bytes: 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\n",
 			      message[1], message[2], message[3], message[4], message[5]);
 		break;
 	default:
@@ -2794,10 +2795,12 @@ static void update_noise_state(){
     down(&globe_mxt->sem);	
     if((pre_usb_cable_status == USB_AC_Adapter) && now_usb_cable_status < USB_AC_Adapter){
 	  mxt_write_byte(client, MXT_BASE_ADDR(MXT_PROCG_NOISESUPPRESSION_T48, globe_mxt) + 2 , 0x42);
-	  dev_info(&client->dev, "touch_callback  set charger off\n");
+	  if (debug >= DEBUG_TRACE)
+		  dev_info(&client->dev, "touch_callback  set charger off\n");
     } else if(pre_usb_cable_status < USB_AC_Adapter && (now_usb_cable_status == USB_AC_Adapter)){
         mxt_write_byte(client, MXT_BASE_ADDR(MXT_PROCG_NOISESUPPRESSION_T48, globe_mxt) + 2 , 0x62);
-        dev_info(&client->dev, "touch_callback  set charger on\n");
+        if (debug >= DEBUG_TRACE)
+        	dev_info(&client->dev, "touch_callback  set charger on\n");
     }
     up(&globe_mxt->sem);
 }
@@ -2859,7 +2862,7 @@ static void  mxt_poll_data(struct work_struct * work)
 
 int mxt_stress_open(struct inode *inode, struct file *filp)
 {
-	printk("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	  if( !atomic_dec_and_test(&touch_char_available) )
 	{
 		atomic_inc(&touch_char_available);
@@ -2871,7 +2874,7 @@ int mxt_stress_open(struct inode *inode, struct file *filp)
 
 int mxt_stress_release(struct inode *inode, struct file *filp)
 {
-	printk("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	atomic_inc(&touch_char_available); /* release the device */
 	return 0;          /* success */
 }
@@ -2883,7 +2886,7 @@ int mxt_stress_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	int err = 1;
 	mxt = globe_mxt;
 
-	printk("%s\n", __func__, cmd);
+	pr_debug("%s\n", __func__, cmd);
 	if (_IOC_TYPE(cmd) != MXT_IOC_MAGIC)
 	return -ENOTTY;
 	if (_IOC_NR(cmd) > MXT_IOC_MAXNR)
