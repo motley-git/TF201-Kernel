@@ -432,12 +432,12 @@ exit:
 void battery_callback(unsigned usb_cable_state)
 {
       int old_cable_status=battery_cable_status;
-       printk("========================================================\n") ;
-	printk("battery_callback  usb_cable_state =%x\n",usb_cable_state ) ;
-       printk("========================================================\n") ;
+      pr_debug("========================================================\n") ;
+      pr_debug("battery_callback  usb_cable_state =%x\n",usb_cable_state ) ;
+      pr_debug("========================================================\n") ;
       battery_cable_status = usb_cable_state ;
 	if(!battery_driver_ready){
-		printk("battery_callback battery driver not ready\n") ;
+		pr_debug("battery_callback battery driver not ready\n") ;
 		return;
 	}
 	check_cabe_type();
@@ -473,7 +473,7 @@ static void charger_pad_dock_detection(unsigned long unused)
 
 	dock_in_value = gpio_get_value(TEGRA_GPIO_PU4);
 	charger_pad_dock_value = gpio_get_value(TEGRA_GPIO_PS5);
-	printk(KERN_INFO"charger_pad_dock_detection:%u dock_in_value=%u  charger_pad_dock_value =%u\n",
+	pr_debug(KERN_INFO"charger_pad_dock_detection:%u dock_in_value=%u  charger_pad_dock_value =%u\n",
 		pad_device->dock_charger_pad_interrupt_enabled,dock_in_value,charger_pad_dock_value );
 
 	if(docking_status && dock_in_value == 0 && charger_pad_dock_value ==0){
@@ -495,21 +495,21 @@ int docking_callback(int docking_in )
 {
 	if(!battery_driver_ready)
 		return -1;
-       printk("========================================================\n") ;
-	printk("docking_callback %u  docking_in =%u pu4=%x \n",pad_device->dock_charger_pad_interrupt_enabled,docking_in ,gpio_get_value(TEGRA_GPIO_PU4));
-       printk("========================================================\n") ;
+	pr_debug("========================================================\n") ;
+	pr_debug("docking_callback %u  docking_in =%u pu4=%x \n",pad_device->dock_charger_pad_interrupt_enabled,docking_in ,gpio_get_value(TEGRA_GPIO_PU4));
+	pr_debug("========================================================\n") ;
 	docking_status=docking_in;
 
 	if( docking_status ){
 		if(!pad_device->dock_charger_pad_interrupt_enabled){
 			enable_irq(gpio_to_irq(TEGRA_GPIO_PS5));
 			pad_device->dock_charger_pad_interrupt_enabled=true;
-			printk("enable_irq(gpio_to_irq(TEGRA_GPIO_PS5)\n") ;
+			pr_debug("enable_irq(gpio_to_irq(TEGRA_GPIO_PS5)\n") ;
 		}
 	}else if(pad_device->dock_charger_pad_interrupt_enabled){
 		disable_irq(gpio_to_irq(TEGRA_GPIO_PS5));
 		pad_device->dock_charger_pad_interrupt_enabled=false;
-		printk("disable_irq(gpio_to_irq(TEGRA_GPIO_PS5)\n") ;
+		pr_debug("disable_irq(gpio_to_irq(TEGRA_GPIO_PS5)\n") ;
 	}
 
 	if(battery_driver_ready){
@@ -598,7 +598,7 @@ static int pad_get_psp(int reg_offset, enum power_supply_property psp,
 			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
 		else 
 			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-		printk("pad_get_psp  val->intval=%s ret=%x\n" ,status_text[val->intval],ret);//4
+		pr_debug("pad_get_psp  val->intval=%s ret=%x\n" ,status_text[val->intval],ret);//4
 	}else if (psp == POWER_SUPPLY_PROP_TEMP) {
 		ret=pad_device->bat_temp;
 		ret -=TEMP_KELVIN_TO_CELCIUS;
