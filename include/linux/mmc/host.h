@@ -16,7 +16,7 @@
 
 #include <linux/mmc/core.h>
 #include <linux/mmc/pm.h>
-#define SD_CARD_DETECT 69
+//#define SD_CARD_DETECT 69
 struct tegra_sdhci_host {
 	bool	clk_enabled;
 	struct regulator *vdd_io_reg;
