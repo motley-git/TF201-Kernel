@@ -2246,9 +2246,6 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
 		u32 present = sdhci_readl(host, SDHCI_PRESENT_STATE) &
 			      SDHCI_CARD_PRESENT;
 
-		printk("mmc:sdhci: %s: intmask 0x%08x SDHCI_INT_STATUS 0x%08x",
-				mmc_hostname(host->mmc), intmask, sdhci_readl(host, SDHCI_INT_STATUS));
-
 		/*
 		 * There is a observation on i.mx esdhc.  INSERT bit will be
 		 * immediately set again when it gets cleared, if a card is
@@ -2267,10 +2264,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
 		sdhci_writel(host, intmask & (SDHCI_INT_CARD_INSERT |
 			     SDHCI_INT_CARD_REMOVE), SDHCI_INT_STATUS);
 		intmask &= ~(SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE);
-		if (strcmp(mmc_hostname(host->mmc), "mmc2")) {
-			tasklet_schedule(&host->card_tasklet);
-			printk("mmc:sdhci: mmc2 tasklet scheduled.");
-		}
+		tasklet_schedule(&host->card_tasklet);
 	}
 
 	if (intmask & SDHCI_INT_CMD_MASK) {

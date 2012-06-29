@@ -87,7 +87,6 @@ static int mmc_schedule_delayed_work(struct delayed_work *work,
 				     unsigned long delay, struct mmc_host *host)
 {
 	int ret = 0;
-	printk("%s: delay %d\n", mmc_hostname(host), delay);
 
 	if(!strcmp(mmc_hostname(host), "mmc0"))
 	{
@@ -244,10 +243,6 @@ static void __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
 {
 	init_completion(&mrq->completion);
 	mrq->done = mmc_wait_done;
-	//if (!strcmp(mmc_hostname(host), "mmc2") && gpio_get_value(SD_CARD_DETECT) == 1) {
-	//	mrq->cmd->error = -ENOMEDIUM;
-	//	return;
-	//}
 	mmc_start_request(host, mrq);
 }
 
@@ -1294,27 +1289,6 @@ static void mmc_power_up(struct mmc_host *host)
 	host->ios.clock = host->f_init;
 
 	host->ios.power_mode = MMC_POWER_ON;
-
-	if(!strcmp(mmc_hostname(host), "mmc2"))
-	{
-		struct sdhci_host *sdhci = mmc_priv(host);
-		struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
-		struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
-		int ret = 0;
-
-		if (tegra_host->vdd_io_reg)
-			printk("%s:vdd_io_reg: use_count %d\n", mmc_hostname(host), tegra_host->vdd_io_reg->rdev->use_count);
-
-		if (tegra_host->vdd_slot_reg)
-			printk("%s:vdd_slot_reg: use_count %d\n", mmc_hostname(host), tegra_host->vdd_slot_reg->rdev->use_count);
-
-		if (tegra_host->vdd_io_reg && tegra_host->vdd_io_reg->rdev->use_count == 0)
-			ret = regulator_enable(tegra_host->vdd_io_reg);
-		if (tegra_host->vdd_slot_reg && tegra_host->vdd_slot_reg->rdev->use_count == 0)
-			ret = regulator_enable(tegra_host->vdd_slot_reg);
-
-	}
-
 	mmc_set_ios(host);
 
 	/*
@@ -1346,27 +1320,6 @@ void mmc_power_off(struct mmc_host *host)
 	host->ios.power_mode = MMC_POWER_OFF;
 	host->ios.bus_width = MMC_BUS_WIDTH_1;
 	host->ios.timing = MMC_TIMING_LEGACY;
-
-	if(!strcmp(mmc_hostname(host), "mmc2"))
-	{
-		struct sdhci_host *sdhci = mmc_priv(host);
-		struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
-		struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
-		int ret = 0;
-
-		if (tegra_host->vdd_slot_reg)
-			printk("%s:vdd_slot_reg: use_count %d\n", mmc_hostname(host), tegra_host->vdd_slot_reg->rdev->use_count);
-
-		if (tegra_host->vdd_io_reg)
-			printk("%s:vdd_io_reg: use_count %d\n", mmc_hostname(host), tegra_host->vdd_io_reg->rdev->use_count);
-
-		if (tegra_host->vdd_slot_reg && tegra_host->vdd_slot_reg->rdev->use_count > 0)
-			ret = regulator_disable(tegra_host->vdd_slot_reg);
-		if (tegra_host->vdd_io_reg && tegra_host->vdd_io_reg->rdev->use_count > 0)
-			ret = regulator_disable(tegra_host->vdd_io_reg);
-
-	}
-
 	mmc_set_ios(host);
 
 	mmc_host_clk_release(host);
@@ -1431,7 +1384,7 @@ int mmc_resume_bus(struct mmc_host *host)
 		host->bus_ops->resume(host);
 	}
 
-	if (host->bus_ops->detect && !host->bus_dead && strcmp(mmc_hostname(host), "mmc2"))
+	if (host->bus_ops->detect && !host->bus_dead)
 		host->bus_ops->detect(host);
 
 	mmc_bus_put(host);
@@ -1507,11 +1460,7 @@ void mmc_detect_change(struct mmc_host *host, unsigned long delay)
 #endif
 
 	wake_lock(&host->detect_wake_lock);
-
-	printk("%s: gpio_%d:%d\n", mmc_hostname(host), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
-
-mmc_schedule_delayed_work(&host->detect, delay, host);
-
+	mmc_schedule_delayed_work(&host->detect, delay, host);
 }
 
 EXPORT_SYMBOL(mmc_detect_change);
@@ -1959,10 +1908,10 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 {
 	host->f_init = freq;
 
-
+#ifdef CONFIG_MMC_DEBUG
 	pr_info("%s: %s: trying to init card at %u Hz\n",
 		mmc_hostname(host), __func__, host->f_init);
-
+#endif
 	mmc_power_up(host);
 
 	/*
@@ -1977,21 +1926,11 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 
 	/* Order's important: probe SDIO, then SD, then MMC */
 	if (!mmc_attach_sdio(host))
-	{
-		printk("%s: sdio completed\n", mmc_hostname(host));
 		return 0;
-	}
 	if (!mmc_attach_sd(host))
-	{
-		printk("%s: SD completed\n", mmc_hostname(host));
 		return 0;
-	}
 	if (!mmc_attach_mmc(host))
-	{
-
-		printk("%s: eMMC completed\n", mmc_hostname(host));
 		return 0;
-	}
 
 	mmc_power_off(host);
 	return -EIO;
@@ -2004,12 +1943,6 @@ void mmc_rescan(struct work_struct *work)
 		container_of(work, struct mmc_host, detect.work);
 	int i;
 	bool extend_wakelock = false;
-	int ret = 0;
-
-	printk("%s: gpio_%d:%d rescan_disable %d\n", mmc_hostname(host), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT), host->rescan_disable);
-
-	if(!strcmp(mmc_hostname(host), "mmc2") && host->rescan_disable == 1 && gpio_get_value(SD_CARD_DETECT) == 1)
-		host->rescan_disable = 0;
 
 	if (host->rescan_disable)
 		goto out;
@@ -2052,9 +1985,6 @@ void mmc_rescan(struct work_struct *work)
 	if (host->ops->get_cd && host->ops->get_cd(host) == 0)
 		goto out;
 
-	if(!strcmp(mmc_hostname(host), "mmc2"))
-		goto out;
-
 	mmc_claim_host(host);
 	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
 		if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min))) {
@@ -2087,11 +2017,6 @@ void mmc_rescan(struct work_struct *work)
 	}
 	if (host->caps & MMC_CAP_NEEDS_POLL)
 		mmc_schedule_delayed_work(&host->detect, HZ, host);
-
-	if(!strcmp(mmc_hostname(host), "mmc2") && ret)
-		mmc_schedule_delayed_work(&host->detect, HZ, host);
-	
-	printk("%s: extend_wakelock %d\n", mmc_hostname(host), extend_wakelock);
 
 }
 
@@ -2335,12 +2260,10 @@ EXPORT_SYMBOL(mmc_resume_host);
 int mmc_pm_notify(struct notifier_block *notify_block,
 					unsigned long mode, void *unused)
 {
-	printk("[mmc]mmc_pm_notify start\n");
 	struct mmc_host *host = container_of(
 		notify_block, struct mmc_host, pm_notify);
 	unsigned long flags;
 
-	printk("%s: mmc_pm_notify mode %d, tegra_wakeup_sdcard_event %d, bus_resume_flags %d rescan_disable %d\n", mmc_hostname(host), mode, tegra_wakeup_sdcard_event, host->bus_resume_flags, host->rescan_disable);
 
 	switch (mode) {
 	case PM_HIBERNATION_PREPARE:
@@ -2368,7 +2291,6 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 		mmc_power_off(host);
 		mmc_release_host(host);
 		host->pm_flags = 0;
-		printk("%s mmc_pm_notify mode %d ended\n", mmc_hostname(host), mode);
 		break;
 
 	case PM_POST_SUSPEND:
@@ -2376,28 +2298,15 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 	case PM_POST_RESTORE:
 
 		spin_lock_irqsave(&host->lock, flags);
-		host->rescan_disable = 0;
-		if(tegra_wakeup_sdcard_event && !strcmp(mmc_hostname(host), "mmc2"))
-		{
-			host->bus_resume_flags &= ~MMC_BUSRESUME_NEEDS_RESUME;
-			mmc_set_bus_resume_policy(host, 0);
-			printk("%s mmc_pm_notify reset defer resume bus_resume_flags %d\n", mmc_hostname(host), host->bus_resume_flags);
-		}
 		if (mmc_bus_manual_resume(host)) {
 			spin_unlock_irqrestore(&host->lock, flags);
 			break;
 		}
+		host->rescan_disable = 0;
 		spin_unlock_irqrestore(&host->lock, flags);
-		if(!strcmp(mmc_hostname(host), "mmc2"))
-		{
-			if(tegra_wakeup_sdcard_event)
-				mmc_detect_change(host, 0);
-		}
-		else
-			mmc_detect_change(host, 0);
+		mmc_detect_change(host, 0);
 
 	}
-	printk("%s mmc_pm_notify finished\n", mmc_hostname(host));
 
 	return 0;
 }

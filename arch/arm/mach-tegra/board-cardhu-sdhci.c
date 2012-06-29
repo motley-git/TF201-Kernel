@@ -28,7 +28,6 @@
 #include <mach/irqs.h>
 #include <mach/iomap.h>
 #include <mach/sdhci.h>
-#include <mach/board-cardhu-misc.h>
 
 #include "gpio-names.h"
 #include "board.h"
@@ -133,7 +132,7 @@ static struct tegra_sdhci_platform_data tegra_sdhci_platform_data2 = {
 	.mmc_data = {
 		.register_status_notify	= cardhu_wifi_status_register,
 		.embedded_sdio = &embedded_sdio_data2,
-		.built_in = -1,
+		.built_in = 1,
 	},
 	.wow_gpio = CARDHU_SDIO_WOW,
 	.cd_gpio = -1,
@@ -293,19 +292,7 @@ int __init cardhu_sdhci_init(void)
 		(board_info.board_id == BOARD_PM305) ||
 		(board_info.board_id == BOARD_PM311)) {
 			tegra_sdhci_platform_data0.wp_gpio = PM269_SD_WP;
-	}
-
-	switch (tegra3_query_wifi_module_pcbid()){
-
-	case 0:
-	case 2:
-		tegra_sdhci_platform_data2.mmc_data.built_in = 1;
-		break;
-	case 1:
-	case 3:
-	default:
-		tegra_sdhci_platform_data2.mmc_data.built_in = 0;
-		break;
+			tegra_sdhci_platform_data2.max_clk_limit = 12000000;
 	}
 
 	platform_device_register(&tegra_sdhci_device3);

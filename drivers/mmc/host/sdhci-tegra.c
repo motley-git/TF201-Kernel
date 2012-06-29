@@ -59,7 +59,7 @@
 
 #define SDHOST_1V8_OCR_MASK	0x8
 #define SDHOST_HIGH_VOLT_MIN	2900000
-#define SDHOST_HIGH_VOLT_MAX	3300000
+#define SDHOST_HIGH_VOLT_MAX	2940000
 #define SDHOST_LOW_VOLT_MIN	1800000
 #define SDHOST_LOW_VOLT_MAX	1800000
 
@@ -287,9 +287,6 @@ static void sdhci_status_notify_cb(int card_present, void *dev_id)
 static irqreturn_t carddetect_irq(int irq, void *data)
 {
 	struct sdhci_host *sdhost = (struct sdhci_host *)data;
-
-	printk("%s: gpio_%d:%d\n", mmc_hostname(sdhost->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
-	
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhost);
 	struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
 	struct platform_device *pdev = to_platform_device(mmc_dev(sdhost->mmc));
@@ -469,12 +466,6 @@ set_clk:
 	sdhci_writew(sdhci, clk, SDHCI_CLOCK_CONTROL);
 out:
 	sdhci->clock = clock;
-	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc1")) {
-#ifdef CONFIG_MMC_DEBUG
-	printk( "%s clock request: %uKHz. currently "
-			"%uKHz\n", mmc_hostname(sdhci->mmc), clock/1000, sdhci->max_clk/1000);
-#endif
-	}
 }
 #endif
 
@@ -825,52 +816,20 @@ static int tegra_sdhci_suspend(struct sdhci_host *sdhci, pm_message_t state)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
 	struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
-	int ret = 0;
 
 	tegra_sdhci_set_clock(sdhci, 0);
 
-	/* Keep the power rail of MMC type mmc0 for HW watchdog mechanism */
-	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc0")) {
-		pr_info("keep the power rail of %s", mmc_hostname(sdhci->mmc));
-		goto skip;
-	}
 	/* Disable the power rails if any */
-	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc2"))
-	{
-
-		if (tegra_host->vdd_slot_reg)
-			printk("%s:vdd_slot_reg: use_count %d\n", mmc_hostname(sdhci->mmc), tegra_host->vdd_slot_reg->rdev->use_count);
-
-		if (tegra_host->vdd_io_reg)
-			printk("%s:vdd_io_reg: use_count %d\n", mmc_hostname(sdhci->mmc), tegra_host->vdd_io_reg->rdev->use_count);
-
-		if (tegra_host->vdd_slot_reg && tegra_host->vdd_slot_reg->rdev->use_count > 0)
-		{
-			ret = regulator_disable(tegra_host->vdd_slot_reg);
-			printk("%s: vdd_slot_reg ret %d\n", mmc_hostname(sdhci->mmc), ret);
-		}
-
-		if (tegra_host->vdd_io_reg && tegra_host->vdd_io_reg->rdev->use_count > 0)
-		{
-			ret = regulator_disable(tegra_host->vdd_io_reg);
-			printk("%s: vdd_io_reg ret %d\n", mmc_hostname(sdhci->mmc), ret);
+	if (tegra_host->card_present) {
+		if (tegra_host->is_rail_enabled) {
+			if (tegra_host->vdd_io_reg)
+				regulator_disable(tegra_host->vdd_io_reg);
+			if (tegra_host->vdd_slot_reg)
+				regulator_disable(tegra_host->vdd_slot_reg);
+			tegra_host->is_rail_enabled = 0;
 		}
 	}
-	else
-	{
-		if (tegra_host->card_present) {
-			printk("%s: card_present %d\n", mmc_hostname(sdhci->mmc), tegra_host->card_present);
-               if (tegra_host->is_rail_enabled) {
-               		printk("%s: is_rail_enabled %d\n", mmc_hostname(sdhci->mmc), tegra_host->is_rail_enabled);
-                       if (tegra_host->vdd_io_reg)
-                               regulator_disable(tegra_host->vdd_io_reg);
-                       if (tegra_host->vdd_slot_reg)
-                               regulator_disable(tegra_host->vdd_slot_reg);
-                       tegra_host->is_rail_enabled = 0;
-               }
-       }
-	}
-skip:
+
 	return 0;
 }
 
@@ -878,56 +837,25 @@ static int tegra_sdhci_resume(struct sdhci_host *sdhci)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
 	struct tegra_sdhci_host *tegra_host = pltfm_host->priv;
-	
-	int ret = 0;
-
-	/* Skip the power rail re-enabled of MMC type mmc0 for HW watchdog mechanism */
-	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc0")) {
-		pr_info("skip the power rail re-enabled of %s",
-			mmc_hostname(sdhci->mmc));
-		goto skip;
-	}
 
 	/* Enable the power rails if any */
-	if(!strcmp(mmc_hostname(sdhci->mmc), "mmc2"))
-	{
-		if (tegra_host->vdd_io_reg)
-			printk("%s:vdd_io_reg: use_count %d\n", mmc_hostname(sdhci->mmc), tegra_host->vdd_io_reg->rdev->use_count);
-
-		if (tegra_host->vdd_slot_reg)
-			printk("%s:vdd_slot_reg: use_count %d\n", mmc_hostname(sdhci->mmc), tegra_host->vdd_slot_reg->rdev->use_count);
-
-		printk("%s: gpio_%d:%d\n", mmc_hostname(sdhci->mmc), SD_CARD_DETECT, gpio_get_value(SD_CARD_DETECT));
-		if(gpio_get_value(SD_CARD_DETECT) == 0)
-		{
-			if (tegra_host->vdd_io_reg && tegra_host->vdd_io_reg->rdev->use_count == 0)
-				ret = regulator_enable(tegra_host->vdd_io_reg);
-			if (tegra_host->vdd_slot_reg && tegra_host->vdd_slot_reg->rdev->use_count == 0)
-				ret = regulator_enable(tegra_host->vdd_slot_reg);
-		}
-	}
-	else {
-		/* Enable the power rails if any */
-		if (tegra_host->card_present) {
-			if (!tegra_host->is_rail_enabled) {
-				if (tegra_host->vdd_slot_reg)
-					regulator_enable(tegra_host->vdd_slot_reg);
-				if (tegra_host->vdd_io_reg) {
-					regulator_enable(tegra_host->vdd_io_reg);
-					tegra_sdhci_signal_voltage_switch(sdhci, MMC_SIGNAL_VOLTAGE_330);
-				}
-				tegra_host->is_rail_enabled = 1;
+	if (tegra_host->card_present) {
+		if (!tegra_host->is_rail_enabled) {
+			if (tegra_host->vdd_slot_reg)
+				regulator_enable(tegra_host->vdd_slot_reg);
+			if (tegra_host->vdd_io_reg) {
+				regulator_enable(tegra_host->vdd_io_reg);
+				tegra_sdhci_signal_voltage_switch(sdhci, MMC_SIGNAL_VOLTAGE_330);
 			}
+			tegra_host->is_rail_enabled = 1;
 		}
 	}
-skip:
 	/* Setting the min identification clock of freq 400KHz */
 	tegra_sdhci_set_clock(sdhci, 400000);
 
 	/* Reset the controller and power on if MMC_KEEP_POWER flag is set*/
 	if (sdhci->mmc->pm_flags & MMC_PM_KEEP_POWER) {
 		tegra_sdhci_reset(sdhci, SDHCI_RESET_ALL);
-
 		sdhci_writeb(sdhci, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
 		sdhci->pwr = 0;
 	}
@@ -1054,9 +982,8 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 	}
 
 	if (gpio_is_valid(plat->wow_gpio)) {
-		printk("%s: enable Wi-Fi wake event\n",mmc_hostname(host->mmc));
 		enable_irq_wake(gpio_to_irq(plat->wow_gpio));
-        }
+    }
 
 	if (plat->mmc_data.status) {
 		plat->mmc_data.card_present = plat->mmc_data.status(mmc_dev(host->mmc));
@@ -1081,7 +1008,6 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 		tegra_host->card_present = 1;
 
 	if (!plat->mmc_data.built_in) {
-		printk("%s: built_in=%d\n", mmc_hostname(host->mmc), plat->mmc_data.built_in);
 		if (plat->mmc_data.ocr_mask & SDHOST_1V8_OCR_MASK) {
 			tegra_host->vddio_min_uv = SDHOST_LOW_VOLT_MIN;
 			tegra_host->vddio_max_uv = SDHOST_LOW_VOLT_MAX;
@@ -1091,13 +1017,9 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 			*/
 			tegra_host->vddio_min_uv = SDHOST_HIGH_VOLT_MIN;
 			tegra_host->vddio_max_uv = SDHOST_HIGH_VOLT_MAX;
-
 		}
-
 		printk("%s: ready to set V min/max %d to %d for regulator vddio_sdmmc\n", mmc_hostname(host->mmc),tegra_host->vddio_min_uv, tegra_host->vddio_max_uv);
-
 		tegra_host->vdd_io_reg = regulator_get(mmc_dev(host->mmc), "vddio_sdmmc");
-
 		if (IS_ERR_OR_NULL(tegra_host->vdd_io_reg)) {
 			dev_err(mmc_dev(host->mmc), "%s regulator not found: %ld\n",
 				"vddio_sdmmc", PTR_ERR(tegra_host->vdd_io_reg));
@@ -1118,7 +1040,7 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 				"vddio_sd_slot", PTR_ERR(tegra_host->vdd_slot_reg));
 			tegra_host->vdd_slot_reg = NULL;
 		}
-		
+
 		if (tegra_host->card_present) {
 				   if (tegra_host->vdd_slot_reg)
 						rc = regulator_set_voltage(tegra_host->vdd_slot_reg,
@@ -1189,10 +1111,9 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 		host->mmc->caps |= MMC_CAP_NONREMOVABLE;
 	}
 
-	
-	host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
-	printk("%s: added MMC_PM_IGNORE_PM_NOTIFY flag\n", mmc_hostname(host->mmc));
-	
+	/* set mmc1 built_in = 0 in bcm4329 chip */
+	if(!strcmp(mmc_hostname(host->mmc), "mmc1"))
+		host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
 
 	/* Do not turn OFF embedded sdio cards as it support Wake on Wireless */
 	if (plat->mmc_data.embedded_sdio)
