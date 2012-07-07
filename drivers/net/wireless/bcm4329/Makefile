@@ -32,6 +32,8 @@ else
 DHDCFLAGS += -DSDIO_ISR_THREAD
 endif
 
+DHDCFLAGS += -fno-pic
+
 ifeq ($(TARGET_USE_NEW_TOOLCHAIN),1)
   # gcc-4.6.1 warns a lot more than previous compilers.
   # The following is the minimal set of warnings that need to not error out
