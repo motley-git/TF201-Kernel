@@ -2342,10 +2342,10 @@ int sdhci_suspend_host(struct sdhci_host *host, pm_message_t state)
 			host->tuning_count * HZ);
 	}
 
-	if (mmc->card)
+	if (mmc->card && (mmc->card->type != MMC_TYPE_SDIO))
 		ret = mmc_suspend_host(host->mmc);
 
-	if (mmc->pm_flags & MMC_PM_KEEP_POWER)
+	if (host->flags & MMC_PM_KEEP_POWER)
 		host->card_int_set = sdhci_readl(host, SDHCI_INT_ENABLE) &
 			SDHCI_INT_CARD_INT;
 
@@ -2386,12 +2386,15 @@ int sdhci_resume_host(struct sdhci_host *host)
 	mmiowb();
 
 	if (mmc->card) {
-		ret = mmc_resume_host(host->mmc);
-		/* Enable card interrupt as it is overwritten in sdhci_init */
-		if ((mmc->caps & MMC_CAP_SDIO_IRQ) &&
-			(mmc->pm_flags & MMC_PM_KEEP_POWER))
-				if (host->card_int_set)
-					mmc->ops->enable_sdio_irq(mmc, true);
+		if (mmc->card->type != MMC_TYPE_SDIO) {
+			ret = mmc_resume_host(host->mmc);
+		} else {
+			/* Enable card interrupt as it is overwritten in sdhci_init */
+			if ((mmc->caps & MMC_CAP_SDIO_IRQ) &&
+				(mmc->pm_flags & MMC_PM_KEEP_POWER))
+					if (host->card_int_set)
+						mmc->ops->enable_sdio_irq(mmc, true);
+		}
 	}
 
 	sdhci_enable_card_detection(host);
@@ -2641,7 +2644,7 @@ int sdhci_add_host(struct sdhci_host *host)
 		mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
 
 	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) &&
-	    mmc_card_is_removable(mmc) && !(host->ops->get_cd))
+	    mmc_card_is_removable(mmc))
 		mmc->caps |= MMC_CAP_NEEDS_POLL;
 
 	/* UHS-I mode(s) supported by the host controller. */
@@ -2843,13 +2846,16 @@ int sdhci_add_host(struct sdhci_host *host)
 	if (ret)
 		goto untasklet;
 
-	host->vmmc = regulator_get(mmc_dev(mmc), "vmmc");
+	host->vmmc = NULL; // regulator_get(mmc_dev(mmc), "vmmc");
+
+	/* Tegra SDMMC does not use vmmc
 	if (IS_ERR(host->vmmc)) {
 		printk(KERN_INFO "%s: no vmmc regulator found\n", mmc_hostname(mmc));
 		host->vmmc = NULL;
 	} else {
 		regulator_enable(host->vmmc);
 	}
+	*/
 
 	sdhci_init(host, 0);
 

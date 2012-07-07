@@ -272,6 +272,7 @@ struct _mmc_csd {
  */
 
 #define EXT_CSD_PARTITION_ATTRIBUTE	156	/* R/W */
+#define EXT_CSD_MAX_ENH_SIZE_MULT		157 /* R/W */
 #define EXT_CSD_PARTITION_SUPPORT	160	/* RO */
 #define EXT_CSD_HPI_MGMT		161	/* R/W */
 #define EXT_CSD_BKOPS_EN		163	/* R/W */
@@ -282,6 +283,7 @@ struct _mmc_csd {
 #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
 #define EXT_CSD_BUS_WIDTH		183	/* R/W */
 #define EXT_CSD_HS_TIMING		185	/* R/W */
+#define EXT_CSD_POWER_CLASS     187 /* R/W */ 
 #define EXT_CSD_REV			192	/* RO */
 #define EXT_CSD_STRUCTURE		194	/* RO */
 #define EXT_CSD_CARD_TYPE		196	/* RO */

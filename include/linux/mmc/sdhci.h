@@ -8,8 +8,8 @@
  * the Free Software Foundation; either version 2 of the License, or (at
  * your option) any later version.
  */
-#ifndef LINUX_MMC_SDHCI_H
-#define LINUX_MMC_SDHCI_H
+#ifndef __SDHCI_H
+#define __SDHCI_H
 
 #include <linux/scatterlist.h>
 #include <linux/compiler.h>
@@ -169,4 +169,4 @@ struct sdhci_host {
 
 	unsigned long private[0] ____cacheline_aligned;
 };
-#endif /* LINUX_MMC_SDHCI_H */
+#endif /* __SDHCI_H */

@@ -324,6 +324,9 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
 #define mmc_card_ext_capacity(c) ((c)->state & MMC_CARD_SDXC)
 #define mmc_card_doing_bkops(c) ((c)->state & MMC_STATE_DOING_BKOPS)
 #define mmc_card_need_bkops(c) ((c)->state & MMC_STATE_NEED_BKOPS)
+#define mmc_card_uhs(c)		((c)->state & MMC_STATE_ULTRAHIGHSPEED)
+#define mmc_sd_card_uhs(c)	((c)->state & MMC_STATE_ULTRAHIGHSPEED)
+
 #define mmc_card_set_present(c)	((c)->state |= MMC_STATE_PRESENT)
 #define mmc_card_set_readonly(c) ((c)->state |= MMC_STATE_READONLY)
 #define mmc_card_set_highspeed(c) ((c)->state |= MMC_STATE_HIGHSPEED)
@@ -367,6 +370,8 @@ static inline void __maybe_unused remove_quirk_sd(struct mmc_card *card,
 }
 #define mmc_card_set_doing_bkops(c) ((c)->state |= MMC_STATE_DOING_BKOPS)
 #define mmc_card_set_need_bkops(c) ((c)->state |= MMC_STATE_NEED_BKOPS)
+#define mmc_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
+#define mmc_sd_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
 
 #define mmc_card_clr_doing_bkops(c) ((c)->state &= ~MMC_STATE_DOING_BKOPS)
 #define mmc_card_clr_need_bkops(c) ((c)->state &= ~MMC_STATE_NEED_BKOPS)
@@ -417,4 +422,4 @@ extern void mmc_unregister_driver(struct mmc_driver *);
 extern void mmc_fixup_device(struct mmc_card *card,
 			     const struct mmc_fixup *table);
 
-#endif /* LINUX_MMC_CARD_H */
+#endif

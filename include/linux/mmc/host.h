@@ -12,11 +12,10 @@
 
 #include <linux/leds.h>
 #include <linux/sched.h>
-#include <linux/wakelock.h>
 
 #include <linux/mmc/core.h>
 #include <linux/mmc/pm.h>
-//#define SD_CARD_DETECT 69
+#define SD_CARD_DETECT 69
 struct tegra_sdhci_host {
 	bool	clk_enabled;
 	struct regulator *vdd_io_reg;
@@ -75,6 +74,8 @@ struct mmc_ios {
 #define MMC_TIMING_UHS_SDR50	3
 #define MMC_TIMING_UHS_SDR104	4
 #define MMC_TIMING_UHS_DDR50	5
+
+	unsigned char	ddr;			/* dual data rate used */
 
 #define MMC_SDR_MODE		0
 #define MMC_1_2V_DDR_MODE	1
@@ -301,7 +302,6 @@ struct mmc_host {
 	int			claim_cnt;	/* "claim" nesting count */
 
 	struct delayed_work	detect;
-	struct wake_lock	detect_wake_lock;
 
 	const struct mmc_bus_ops *bus_ops;	/* current bus driver */
 	unsigned int		bus_refs;	/* reference counter */
@@ -440,13 +440,18 @@ static inline int mmc_card_keep_power(struct mmc_host *host)
 	return host->pm_flags & MMC_PM_KEEP_POWER;
 }
 
-static inline int mmc_card_wake_sdio_irq(struct mmc_host *host)
+static inline int mmc_card_is_powered_resumed(struct mmc_host *host)
 {
-	return host->pm_flags & MMC_PM_WAKE_SDIO_IRQ;
+	return host->pm_flags & MMC_PM_KEEP_POWER;
 }
 
+static inline int mmc_card_wake_sdio_irq(struct mmc_host *host)
+{
+       return host->pm_flags & MMC_PM_WAKE_SDIO_IRQ;
+}
 static inline int mmc_host_cmd23(struct mmc_host *host)
 {
 	return host->caps & MMC_CAP_CMD23;
 }
-#endif /* LINUX_MMC_HOST_H */
+#endif
+

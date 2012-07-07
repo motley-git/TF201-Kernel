@@ -125,7 +125,6 @@ struct mmc_request {
 	struct mmc_command	*cmd;
 	struct mmc_data		*data;
 	struct mmc_command	*stop;
-
 	struct completion	completion;
 	void			(*done)(struct mmc_request *);/* completion function */
 };
